@@ -3,14 +3,12 @@ package objeto;
 public class Conta {
     private Integer accNum;
     private String titular;
-    private String tipo;
     private double saldo;
 
 
     public Conta(Integer accNumber, String titular, String tipo, double saldo) {
         this.accNum = accNumber;
         this.titular = titular;
-        this.tipo = tipo;
         this.saldo = saldo;
     }
 
@@ -24,9 +22,6 @@ public class Conta {
     public String getTitular() {
         return titular;
     }
-    public String getTipo() {
-        return tipo;
-    }
     public double getSaldo() {
         return saldo;
     }
@@ -36,9 +31,6 @@ public class Conta {
     }
     public void setTitular(String titular) {
         this.titular = titular;
-    }
-    public void setTipo(String tipo) {
-        this.tipo = tipo;
     }
     public void setSaldo(double saldo) {
         this.saldo = saldo;
