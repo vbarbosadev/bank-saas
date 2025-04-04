@@ -1,18 +1,25 @@
 package objeto;
 
 import java.util.ArrayList;
+import java.io.Serializable;
 import objeto.Conta;
 
-public class Banco {
+import javax.swing.*;
 
-    private static int serial = 0;
+public class Banco implements Serializable {
+
+    private String nome;
     private ArrayList<Conta> contas = new ArrayList<>();
+    private Action action;
+
+    public Banco(String nome){
+        this.nome = nome;
+    }
 
     public boolean adicionaConta(Conta conta) {
         try {
             if(!verificaConta(conta.getAccNum())){
                 contas.add(conta);
-                serial++;
                 return true;
             }
             return false;
@@ -81,7 +88,9 @@ public class Banco {
         }
     }
 
-
+    public String getNome() {
+        return nome;
+    }
 
     public boolean verificaConta(int accNum) {
         for (Conta acc : contas) {
@@ -106,5 +115,9 @@ public class Banco {
     public ArrayList<Conta> getContas() {
         return contas;
     };
+
+    public enum Action {
+        DEPOSITO, SAQUE, TRANSFERENCIA, ADD
+    }
 
 }

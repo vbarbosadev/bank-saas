@@ -1,15 +1,18 @@
 package objeto;
 
-public class Conta {
+import java.io.Serializable;
+
+
+public class Conta implements Serializable {
     private Integer accNum;
     private String titular;
-    private double saldo;
+    private Double saldo;
 
 
-    public Conta(Integer accNumber, String titular, String tipo, double saldo) {
+    public Conta(Integer accNumber, String titular) {
         this.accNum = accNumber;
         this.titular = titular;
-        this.saldo = saldo;
+        this.saldo = 0.0;
     }
 
     public void depositar(double valor) {
