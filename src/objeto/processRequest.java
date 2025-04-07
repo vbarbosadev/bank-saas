@@ -5,100 +5,48 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.StringTokenizer;
 
-public class processRequest extends Thread {
-    static int port = 0;
-    private Socket clientSocket;
+public class processRequest{
 
+    /**
+     * Recebe uma string no formato: "comando;idConta;valor" ou "comando;idConta"
+     * Ex: "depositar;123;100.0" ou "saldo;123"
+     * Retorna um objeto Map que pode ser convertido em JSON
+     */
+    public static Map<String, Object> processar(String entrada) {
 
-    public processRequest(Socket s){ this.clientSocket = s; }
+        String operacao = null;
+        Integer contaP = null;
+        Integer contaD = null;
+        Double valor = null;
 
-    @Override
-    public void run() {
+        Map<String, Object> request = new HashMap<>();
+        Map<String, Object> data = new HashMap<>();
 
-        try {
-
-            Thread.sleep(100);
-
-
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            String entrada = in.readLine();
-
-            String action;
-            StringTokenizer tokenizer = new StringTokenizer(entrada, ";");
-            action = tokenizer.nextToken();
-
-            switch (action) {
-                case "DEPOSITO":
-
-                    port = 8081;
-                    break;
-                case "SAQUE":
-                    port = 8081;
-                    break;
-                case "SALDO":
-                    port = 8081;
-                    break;
-                case "CRIAR":
-                    port = 8082;
-                    break;
-                case "BUSCAR":
-                    port = 8082;
-                    break;
-                default:
-                    port = 8080;
-                    break;
+        StringTokenizer tokenizer = new StringTokenizer(entrada, ";");
+        while (tokenizer.hasMoreElements()) {
+            operacao = tokenizer.nextToken();
+            request.put("command", operacao);
+            if (operacao.equals("saldo")) {
+                contaP = Integer.parseInt(tokenizer.nextToken());
+                data.put("id", contaP);
+                break;
             }
-
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            contaP = Integer.parseInt(tokenizer.nextToken());
+            data.put("id", contaP);
+            if(operacao.equals("transferencia")){
+                contaD = Integer.parseInt(tokenizer.nextToken());
+                data.put("id-Dest", contaD);
+            }
+            valor = Double.parseDouble(tokenizer.nextToken().trim());
+            data.put("valor", valor);
         }
 
+        request.put("data", data);
 
-    }
-
-    public static int getRequest(String entrada) {
-        try {
-            Thread.sleep(100);
-
-            String action;
-            StringTokenizer tokenizer = new StringTokenizer(entrada, ";");
-            action = tokenizer.nextToken();
-
-            switch (action) {
-                case "DEPOSITO":
-                    port = 8081;
-                    break;
-                case "SAQUE":
-                    port = 8081;
-                    break;
-                case "SALDO":
-                    port = 8081;
-                    break;
-                case "CRIAR":
-                    port = 8082;
-                    break;
-                case "BUSCAR":
-                    port = 8082;
-                    break;
-                default:
-                    port = 8080;
-                    break;
-            }
-
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-
-
-        return port;
-
-
+        return request;
     }
 }
