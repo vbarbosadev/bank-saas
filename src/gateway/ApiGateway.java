@@ -1,18 +1,21 @@
 package gateway;
 
 
-import objeto.processRequest;
+import objeto.ProcessRequest;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
 
 public class ApiGateway {
+
+
     public static void main(String[] args) throws IOException {
-        var serverSocket = new ServerSocket(5000);
+        ServerSocket serverSocket = new ServerSocket(5000);
         var executor = Executors.newVirtualThreadPerTaskExecutor();
-        private processRequest processRequest;
 
         while (true) {
             var clientSocket = serverSocket.accept();
@@ -20,12 +23,12 @@ public class ApiGateway {
         }
     }
 
+
     private static void handleClient(Socket socket) {
         try (socket) {
             var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             var out = new PrintWriter(socket.getOutputStream(), true);
             String request = in.readLine();
-
 
 
             // Encaminhar para o servidor principal
