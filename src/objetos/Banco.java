@@ -51,7 +51,7 @@ public class Banco {
     }
 
 
-    public void depositar(int numconta, int valor) {
+    public boolean depositar(int numconta, int valor) {
 
         try {
             Map<String, Integer> dados = (Map<String, Integer>) contas.get(numconta);
@@ -60,11 +60,14 @@ public class Banco {
                 String nome = dados.keySet().iterator().next();
                 int saldoAtual = dados.get(nome);
                 dados.put(nome, saldoAtual + valor);
+                return true;
             } else {
                 System.out.println("Conta não encontrada.");
+                return false;
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
         }
 
 
@@ -84,7 +87,7 @@ public class Banco {
         }
 
 
-        return numconta;
+        return -1;
     }
 
     public HashMap<Integer, Object> getContas() {

@@ -1,8 +1,5 @@
 package serversSystem;
 
-import objeto.Banco;
-import objeto.Conta;
-
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -10,7 +7,6 @@ import java.util.StringTokenizer;
 import java.util.concurrent.Executors;
 
 public class ServerBanco {
-    private static final Banco banco = new Banco("Banco");
 
     public static void main(String[] args) throws IOException {
 
@@ -24,14 +20,11 @@ public class ServerBanco {
     }
 
 
-
-
     private static void handleRequest(Socket socket) {
         try (socket) {
             var request = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             var response = new PrintWriter(socket.getOutputStream(), true);
             String msg = request.readLine();
-
 
             // Enviar para o servidor de log (WAL)
             try (Socket logSocket = new Socket("localhost", 9000)) {
@@ -68,10 +61,7 @@ public class ServerBanco {
                         e.printStackTrace();
                     }
                     break;
-
-
             }
-
 
         } catch (IOException e) {
             throw new RuntimeException(e);

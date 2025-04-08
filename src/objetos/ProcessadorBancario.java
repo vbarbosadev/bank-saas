@@ -27,11 +27,11 @@ public class ProcessadorBancario {
         System.out.println("Comandooooo " + comando);
 
 
-        switch (comando){
+        switch (comando) {
             case "criar":
                 numConta = Integer.parseInt(tokenizer.nextToken());
                 String nome = tokenizer.nextToken();
-                if(banco.addConta(numConta, nome)){
+                if (banco.addConta(numConta, nome)) {
                     numContas++;
                     System.out.println("Conta criada com sucesso!");
                     return ("Conta >" + numConta + "< criada com sucesso!");
@@ -39,45 +39,38 @@ public class ProcessadorBancario {
                     System.out.println("Erro ao criar conta!");
                     return ("Erro ao criar conta! número de conta " + numConta + "já existe.");
                 }
-                break;
             case "sacar":
                 numConta = Integer.parseInt(tokenizer.nextToken());
                 valor = Integer.parseInt(tokenizer.nextToken());
-                if(banco.sacar(numConta, valor)){
+                if (banco.sacar(numConta, valor)) {
                     System.out.println("Saque realizado com sucesso!");
                     return ("Novo saldo da conta >" + numConta + "< é de " + banco.getSaldoConta(numConta));
-                }
-                else {
+                } else {
                     System.out.println("Erro ao sacar!");
-                    return ("Erro ao sacar o valor " + valor + " o saldo disponivel é menor que o solicitado!");
+                    return ("Erro ao sacar!");
                 }
-                break;
             case "depositar":
                 numConta = Integer.parseInt(tokenizer.nextToken());
                 valor = Integer.parseInt(tokenizer.nextToken());
-                if(banco.sacar(numConta, valor)){
-                    System.out.println("Saque realizado com sucesso!");
-                    return ("Novo saldo da conta >" + numConta + "< é de " + banco.getSaldoConta(numConta));
+                if (banco.depositar(numConta, valor)) {
+                    System.out.println("Depósito realizado com sucesso!");
+                    return ("Depósito realizado. Novo saldo da conta >" + numConta + "< é de " + banco.getSaldoConta(numConta));
+                } else {
+                    System.out.println("Erro ao depositar!");
+                    return ("Erro ao depositar");
                 }
-                else {
-                    System.out.println("Erro ao sacar!");
-                    return ("Erro ao sacar o valor " + valor + " o saldo disponivel é menor que o solicitado!");
+            case "saldo":
+                numConta = Integer.parseInt(tokenizer.nextToken());
+                if (banco.saldo(numConta) != -1) {
+                    System.out.println("Saldo da conta " + banco.getSaldoConta(numConta));
+                    return ("O saldo da conta é de " + banco.getSaldoConta(numConta));
+                } else {
+                    System.out.println("Erro ao consultar o saldo!");
+                    return ("Erro ao consultar o saldo");
                 }
-                break;
+            default:
+                return "Comando desconhecido!";
 
         }
-
-        while (tokenizer.hasMoreElements()) {
-            if (comando.equals("saldo")) {
-                contaPessoal = Integer.parseInt(tokenizer.nextToken());
-                break;
-            }
-            contaPessoal = Integer.parseInt(tokenizer.nextToken());
-            if(comando.equals("transferencia")){
-                contaDestino = Integer.parseInt(tokenizer.nextToken());
-            }
-            valor = Integer.parseInt(tokenizer.nextToken().trim());
-        }
-
     }
 }
