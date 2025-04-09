@@ -11,31 +11,38 @@ public class ApiGateway {
 
 
     public static void main(String[] args) throws IOException {
+        System.out.println("API GATEWAY");
         ServerSocket serverSocket = new ServerSocket(5000);
         var executor = Executors.newVirtualThreadPerTaskExecutor();
 
         while (true) {
-            var clientSocket = serverSocket.accept();
+            Socket clientSocket = serverSocket.accept();
             executor.submit(() -> handleClient(clientSocket));
         }
     }
 
 
     private static void handleClient(Socket socket) {
-        try (socket) {
-            var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            var out = new PrintWriter(socket.getOutputStream(), true);
+        try (socket;
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             PrintWriter output = new PrintWriter(socket.getOutputStream(), true)) {
+
             String request = in.readLine();
+            System.out.println("request " + request);
 
 
             // Encaminhar para o servidor principal
-            try (Socket server = new Socket("localhost", 6000)) {
-                var serverOut = new PrintWriter(server.getOutputStream(), true);
-                var serverIn = new BufferedReader(new InputStreamReader(server.getInputStream()));
+            try (Socket server = new Socket("localhost", 6000);
+                 BufferedReader serverIn = new BufferedReader(new InputStreamReader(server.getInputStream()));
+                 PrintWriter serverOut = new PrintWriter(server.getOutputStream(), true)){
+
                 serverOut.println(request);
+
                 String response = serverIn.readLine();
-                out.println(response);
+                output.println(response);
             }
+
+
 
         } catch (IOException e) {
             e.printStackTrace();
