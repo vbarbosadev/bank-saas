@@ -9,7 +9,7 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BandoDB {
+public class BancoDB {
 
     private static Banco bancoDB = new Banco();
 
@@ -19,6 +19,7 @@ public class BandoDB {
 
         while (true){
             Socket client = mysocket.accept();
+            BancoDB.start(client);
 
 
         }
@@ -28,7 +29,7 @@ public class BandoDB {
 
     }
 
-    public void start(Socket s) throws IOException {
+    public static void start(Socket s) throws IOException {
         ObjectInputStream bancoRecebido = new ObjectInputStream(s.getOutputStream());
     }
 
