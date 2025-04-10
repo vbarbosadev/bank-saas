@@ -37,7 +37,7 @@ public class ProcessadorBancario {
                     return ("Conta >" + numConta + "< criada com sucesso!");
                 } else {
                     System.out.println("Erro ao criar conta!");
-                    return ("Erro ao criar conta! número de conta " + numConta + "já existe.");
+                    return ("error;Erro ao criar conta! número de conta " + numConta + "já existe.");
                 }
             case "sacar":
                 numConta = Integer.parseInt(tokenizer.nextToken());
@@ -47,7 +47,7 @@ public class ProcessadorBancario {
                     return ("Novo saldo da conta >" + numConta + "< é de " + banco.getSaldoConta(numConta));
                 } else {
                     System.out.println("Erro ao sacar!");
-                    return ("Erro ao sacar!");
+                    return ("error;Erro ao sacar!");
                 }
             case "depositar":
                 numConta = Integer.parseInt(tokenizer.nextToken());
@@ -57,7 +57,7 @@ public class ProcessadorBancario {
                     return ("Depósito realizado. Novo saldo da conta >" + numConta + "< é de " + banco.getSaldoConta(numConta));
                 } else {
                     System.out.println("Erro ao depositar!");
-                    return ("Erro ao depositar");
+                    return ("error;Erro ao depositar");
                 }
             case "saldo":
                 numConta = Integer.parseInt(tokenizer.nextToken());
@@ -66,10 +66,10 @@ public class ProcessadorBancario {
                     return ("O saldo da conta é de " + banco.getSaldoConta(numConta));
                 } else {
                     System.out.println("Erro ao consultar o saldo!");
-                    return ("Erro ao consultar o saldo");
+                    return ("error;Erro ao consultar o saldo");
                 }
             default:
-                return "Comando desconhecido!";
+                return "error;Comando desconhecido!";
 
         }
     }

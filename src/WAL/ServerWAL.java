@@ -8,10 +8,15 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.StringTokenizer;
 import java.util.concurrent.Executors;
 
 public class ServerWAL {
-    private static final String LOG_PATH = "logs.txt";
+    private static final String LOG_PATH01 = "logs.txt";
+    private static final String LOG_PATH02 = "logs.txt";
+    private static final String LOG_PATH03 = "logs.txt";
+
+
 
     public static void main(String[] args) throws IOException {
         var serverSocket = new ServerSocket(9000);
@@ -23,12 +28,33 @@ public class ServerWAL {
         }
     }
 
+    public static String getBloco(String msg){
+        String bloco;
+        StringTokenizer tokenizer = new StringTokenizer(msg, ";");
+        bloco = tokenizer.nextToken();
+        return bloco;
+    }
+
     private static void saveLog(Socket socket) {
         try (socket) {
             var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             String msg = in.readLine();
-            Files.writeString(Path.of(LOG_PATH), msg + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-            System.out.println("Log salvo: " + msg);
+            String bloco = getBloco(msg);
+
+            switch (bloco){
+                case "1":
+                    Files.writeString(Path.of(LOG_PATH01), msg + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                    System.out.println("Log salvo no bloco 1: " + msg);
+                    break;
+                case "2":
+                    Files.writeString(Path.of(LOG_PATH02), msg + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                    System.out.println("Log salvo no bloco 2: " + msg);
+                    break;
+                case "3":
+                    Files.writeString(Path.of(LOG_PATH03), msg + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                    System.out.println("Log salvo no bloco 3: " + msg);
+                    break;
+            }
 
         } catch (IOException e) {
             e.printStackTrace();

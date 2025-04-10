@@ -28,7 +28,7 @@ public class ApiGateway {
              PrintWriter output = new PrintWriter(socket.getOutputStream(), true)) {
 
             String request = in.readLine();
-            System.out.println("request " + request);
+
 
 
             // Encaminhar para o servidor principal
@@ -37,9 +37,10 @@ public class ApiGateway {
                  PrintWriter serverOut = new PrintWriter(server.getOutputStream(), true)){
 
                 serverOut.println(request);
-
+                System.out.println("request " + request);
                 String response = serverIn.readLine();
                 output.println(response);
+                System.out.println("response " + response);
             }
 
 

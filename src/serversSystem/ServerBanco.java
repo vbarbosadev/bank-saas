@@ -3,134 +3,125 @@ package serversSystem;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class ServerBanco implements Serializable {
-    private static final long serialVersionUID = 1L;
     private static int qtdClientes = 0;
-    private static int ordem = 1;
-
+    private static MonitorDeInstancias monitor;
+    private static List<ListaDeServers> ativos = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
         System.out.println("Iniciando Servidor...");
 
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.scheduleAtFixedRate(ServerBanco::monitoramento, 0, 30, TimeUnit.SECONDS);
+
+        System.out.println("AQUIIIIIIII");
         var serverSocket = new ServerSocket(6000);
         var executor = Executors.newVirtualThreadPerTaskExecutor();
+
+        System.out.println("AQUIIIIIIII");
 
         while (true) {
             var clientSocket = serverSocket.accept();
             executor.submit(() -> handleRequest(clientSocket));
             qtdClientes++;
+            System.out.println("qtd clientes: " + qtdClientes);
         }
     }
+
 
 
     private static void handleRequest(Socket socket) {
         try (socket;
              BufferedReader request = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter response = new PrintWriter(socket.getOutputStream(), true);) {
+             PrintWriter response = new PrintWriter(socket.getOutputStream(), true)) {
+
+            System.out.println("AQUIIIIIIII 01");
 
             String msg = request.readLine();
-
-
-
-
-            // Enviar para o servidor de log (WAL)
-            try (Socket logSocket = new Socket("localhost", 9000)) {
-                var logOut = new PrintWriter(logSocket.getOutputStream(), true);
-                logOut.println(msg);  // WAL antes da operação
-                System.out.println("Log enviado com sucesso!");
-            }
-
-
-//            if(ordem == 3){
-//                ordem = 1;
-//            }
-//
-//            switch (ordem) {
-//                case 1:
-//                    // Encaminhar para um servidor auxiliar (ex: localhost:7000) : corrente
-//                    try (Socket correnteSocket = new Socket("localhost", 7000)) {
-//                        System.out.println("Enviando para o servidor de conta corrente!");
-//                        var auxOut = new PrintWriter(correnteSocket.getOutputStream(), true);
-//                        var auxIn = new BufferedReader(new InputStreamReader(correnteSocket.getInputStream()));
-//                        auxOut.println(msg);
-//                        String respCorrente = auxIn.readLine();
-//                        response.println(respCorrente); // resposta
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//                    break;
-//                case 2:
-//                    // Encaminhar para um servidor auxiliar (ex: localhost:7000) : corrente
-//                    try (Socket poupancaSocket = new Socket("localhost", 7001)) {
-//                        System.out.println("Enviando para o servidor de conta poupança!");
-//                        var auxOut = new PrintWriter(poupancaSocket.getOutputStream(), true);
-//                        var auxIn = new BufferedReader(new InputStreamReader(poupancaSocket.getInputStream()));
-//                        auxOut.println(msg);
-//                        String respostaPoup = auxIn.readLine();
-//                        response.println(respostaPoup); // resposta
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//                    break;
-//                case 3:
-//                    // Encaminhar para um servidor auxiliar (ex: localhost:7000) : corrente
-//                    try (Socket poupancaSocket = new Socket("localhost", 7002)) {
-//                        System.out.println("Enviando para o servidor de conta poupança!");
-//                        var auxOut = new PrintWriter(poupancaSocket.getOutputStream(), true);
-//                        var auxIn = new BufferedReader(new InputStreamReader(poupancaSocket.getInputStream()));
-//                        auxOut.println(msg);
-//                        String respostaPoup = auxIn.readLine();
-//                        response.println(respostaPoup); // resposta
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//                    break;
-//            }
-//
-//            ordem++;
-
-
-
-            String tipoConta = null;
             StringTokenizer tokenizer = new StringTokenizer(msg, ";");
-            tipoConta = tokenizer.nextToken();
+            tokenizer.nextToken();
+            int accNum = Integer.parseInt(tokenizer.nextToken());
+            int lastDigit = accNum % 10;
 
-            switch (tipoConta) {
-                case "corrente":
-                    // Encaminhar para um servidor auxiliar (ex: localhost:7000) : corrente
-                    try (Socket correnteSocket = new Socket("localhost", 7000)) {
-                        System.out.println("Enviando para o servidor de conta corrente!");
-                        var auxOut = new PrintWriter(correnteSocket.getOutputStream(), true);
-                        var auxIn = new BufferedReader(new InputStreamReader(correnteSocket.getInputStream()));
-                        auxOut.println(msg);
-                        String respCorrente = auxIn.readLine();
-                        response.println(respCorrente); // resposta
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    break;
-                case "poupanca":
-                    // Encaminhar para um servidor auxiliar (ex: localhost:7000) : corrente
-                    try (Socket poupancaSocket = new Socket("localhost", 7001)) {
-                        System.out.println("Enviando para o servidor de conta poupança!");
-                        var auxOut = new PrintWriter(poupancaSocket.getOutputStream(), true);
-                        var auxIn = new BufferedReader(new InputStreamReader(poupancaSocket.getInputStream()));
-                        auxOut.println(msg);
-                        String respostaPoup = auxIn.readLine();
-                        response.println(respostaPoup); // resposta
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    break;
+            System.out.println("AQUIIIIIIII");
+
+            int portaDestino;
+            int bloco;
+
+
+
+
+            if (lastDigit <= 2) {
+                portaDestino = 7001;
+                bloco = 1;
+            } else if (lastDigit <= 5) {
+                portaDestino = 7002;
+                bloco = 2;
+            } else {
+                portaDestino = 7003;
+                bloco = 2;
             }
 
+            boolean servidorAtivo = true;
 
+            System.out.println("AQUIIIIIIIIAAAAAAAAAAA");
+
+            for(var ativo : ativos) {
+                System.out.println("Portaaa: " + ativo.getPorta());
+                if(ativo.getPorta() == portaDestino){
+                    servidorAtivo = true;
+                } else {
+                    servidorAtivo = false;
+                }
+            }
+
+            if (!servidorAtivo) {
+                response.println("error;Servidor indisponível na porta " + portaDestino);
+                System.out.println("Servidor inativo na porta " + portaDestino + ", operação não realizada.");
+                return;
+            }
+
+            try (Socket auxSocket = new Socket("localhost", portaDestino)) {
+                System.out.println("Enviando para o servidor da porta " + portaDestino + "!");
+                var auxOut = new PrintWriter(auxSocket.getOutputStream(), true);
+                var auxIn = new BufferedReader(new InputStreamReader(auxSocket.getInputStream()));
+
+                auxOut.println(msg);
+                String respBanco = auxIn.readLine();
+
+                StringTokenizer tokenizerAux = new StringTokenizer(respBanco, ";");
+                String checkError = tokenizerAux.nextToken();
+
+                if (checkError.equals("error")) {
+                    respBanco = respBanco.substring(6);
+                } else {
+                    try (Socket logSocket = new Socket("localhost", 9000)) {
+                        var logOut = new PrintWriter(logSocket.getOutputStream(), true);
+                        logOut.println(bloco + ";" + msg);  // WAL antes da operação
+                        System.out.println("Log enviado com sucesso para o bloco " + bloco + "!");
+                    }
+                }
+                response.println(respBanco);
+            } catch (IOException e) {
+                e.printStackTrace();
+                response.println("error;Falha ao conectar ao servidor na porta " + portaDestino);
+            }
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static void monitoramento() {
+        monitor.iniciarMonitoramento();
+        ativos = monitor.getServidorAtivo();
     }
 }

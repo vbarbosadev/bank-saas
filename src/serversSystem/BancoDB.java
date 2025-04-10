@@ -15,25 +15,28 @@ public class BancoDB {
 
     public static void main(String[] args) throws IOException {
 
-        ServerSocket mysocket = new ServerSocket("7050");
+        ServerSocket mysocket = new ServerSocket(7040);
 
         while (true){
             Socket client = mysocket.accept();
             BancoDB.start(client);
-
-
         }
-
-
-
-
     }
 
-    public static void start(Socket s) throws IOException {
-        ObjectInputStream bancoRecebido = new ObjectInputStream(s.getOutputStream());
+    public static void start(Socket s) {
+        try(ObjectInputStream in = new ObjectInputStream(s.getInputStream());){
+            Banco bancoRecebido = (Banco) in.readObject();
+            mesclarBancos(bancoRecebido);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private void mesclarBancos(Banco recebido) {
+
+
+    private static void mesclarBancos(Banco recebido) {
         HashMap<Integer, Object> contasRecebidas = recebido.getContas();
 
         for (Map.Entry<Integer, Object> entry : contasRecebidas.entrySet()) {
