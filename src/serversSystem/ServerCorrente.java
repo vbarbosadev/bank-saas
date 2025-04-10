@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit;
 public class ServerCorrente {
 
     public static void main(String[] args) {
+        int PORT = 0;
+        PORT = Integer.parseInt(args[0]);
         System.out.println("Server Corrente iniciado");
         Banco banco = new Banco();
 
@@ -24,7 +26,7 @@ public class ServerCorrente {
 
         // 🔥 Virtual thread para cada requisição
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-             ServerSocket server = new ServerSocket(7000, 1000)) {
+             ServerSocket server = new ServerSocket(PORT, 1000)) {
 
             while (true) {
                 Socket LeaderSocket = server.accept();
