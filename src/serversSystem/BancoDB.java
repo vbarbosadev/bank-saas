@@ -2,41 +2,51 @@ package serversSystem;
 
 import objetos.Banco;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 public class BancoDB {
 
-    private static Banco bancoDB = new Banco();
+    private static Banco bancoDB;
 
     public static void main(String[] args) throws IOException {
+        bancoDB = carregarBanco();
+
+        // Hook para salvar ao encerrar a aplicação (Ctrl+C, kill, etc)
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            salvarBanco();
+            System.out.println("Banco salvo antes de encerrar.");
+        }));
 
         ServerSocket mysocket = new ServerSocket(7040);
+        var executor = Executors.newVirtualThreadPerTaskExecutor();
 
-        while (true){
+        System.out.println("Servidor BancoDB ativo na porta 7040...");
+        bancoDB.imprimirContas();
+
+        while (true) {
             Socket client = mysocket.accept();
-            BancoDB.start(client);
+            executor.submit(() -> start(client));
+            bancoDB.imprimirContas();
         }
     }
 
     public static void start(Socket s) {
-        try(ObjectInputStream in = new ObjectInputStream(s.getInputStream());){
+        try (s; ObjectInputStream in = new ObjectInputStream(s.getInputStream())) {
             Banco bancoRecebido = (Banco) in.readObject();
             mesclarBancos(bancoRecebido);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            salvarBanco(); // salva após mesclagem
+            System.out.println("Banco mesclado e salvo com sucesso.");
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Erro ao receber ou salvar dados do banco: " + e.getMessage());
         }
     }
 
-
-
-    private static void mesclarBancos(Banco recebido) {
+    private static synchronized void mesclarBancos(Banco recebido) {
         HashMap<Integer, Object> contasRecebidas = recebido.getContas();
 
         for (Map.Entry<Integer, Object> entry : contasRecebidas.entrySet()) {
@@ -55,4 +65,27 @@ public class BancoDB {
         }
     }
 
+    private static void salvarBanco() {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("bancoDB.dat"))) {
+            out.writeObject(bancoDB);
+        } catch (IOException e) {
+            System.err.println("Erro ao salvar banco em arquivo: " + e.getMessage());
+        }
+    }
+
+    private static Banco carregarBanco() {
+        File arquivo = new File("bancoDB.dat");
+        if (!arquivo.exists()) {
+            System.out.println("Nenhum banco salvo encontrado. Criando novo...");
+            return new Banco();
+        }
+
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(arquivo))) {
+            System.out.println("Banco carregado com sucesso a partir do arquivo.");
+            return (Banco) in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Erro ao carregar banco salvo: " + e.getMessage());
+            return new Banco();
+        }
+    }
 }

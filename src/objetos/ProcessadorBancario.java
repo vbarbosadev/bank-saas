@@ -22,7 +22,6 @@ public class ProcessadorBancario {
         int valor = 0;
 
         StringTokenizer tokenizer = new StringTokenizer(request, ";");
-        tokenizer.nextToken();
         comando = tokenizer.nextToken();
         System.out.println("Comandooooo " + comando);
 

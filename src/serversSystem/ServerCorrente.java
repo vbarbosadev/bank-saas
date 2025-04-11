@@ -26,7 +26,7 @@ public class ServerCorrente {
 
         // ✅ Thread agendada para enviar o banco a cada 2 minutos
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(() -> enviarBancoParaAuxiliar(banco), 0, 2, TimeUnit.MINUTES);
+        scheduler.scheduleAtFixedRate(() -> enviarBancoParaAuxiliar(banco), 0, 20, TimeUnit.SECONDS);
 
         // 🔥 Virtual thread para cada requisição
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
@@ -60,6 +60,7 @@ public class ServerCorrente {
 
             System.out.println("Operação recebida de " + LeaderSocket.getInetAddress() + ": " + msg);
 
+
             String reply = process.processar(msg);
             output.println("Server response: " + reply);
 
@@ -76,6 +77,7 @@ public class ServerCorrente {
         try (Socket socket = new Socket("localhost", 7040); // Porta do servidor auxiliar
              ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream())) {
 
+            banco.imprimirContas();
             out.writeObject(banco);
             out.flush();
             System.out.println("[LOG] Banco enviado para o servidor auxiliar com sucesso.");

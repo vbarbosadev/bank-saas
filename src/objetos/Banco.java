@@ -1,9 +1,10 @@
 package objetos;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Banco {
+public class Banco implements Serializable {
 
 
     private HashMap<Integer, Object> contas = new HashMap<>();
@@ -109,6 +110,28 @@ public class Banco {
             return null;
         }
     }
+
+    public void imprimirContas() {
+        if (contas.isEmpty()) {
+            System.out.println("Nenhuma conta cadastrada.");
+            return;
+        }
+
+        System.out.println("=== LISTA DE CONTAS ===");
+        for (Map.Entry<Integer, Object> entry : contas.entrySet()) {
+            Integer numConta = entry.getKey();
+            Map<String, Integer> dados = (Map<String, Integer>) entry.getValue();
+
+            if (dados != null && !dados.isEmpty()) {
+                String nome = dados.keySet().iterator().next();
+                Integer saldo = dados.get(nome);
+                System.out.printf("Conta: %d | Nome: %s | Saldo: R$ %d\n", numConta, nome, saldo);
+            }
+        }
+        System.out.println("=======================");
+    }
+
+
 
 
 }

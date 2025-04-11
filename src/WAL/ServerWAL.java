@@ -12,9 +12,9 @@ import java.util.StringTokenizer;
 import java.util.concurrent.Executors;
 
 public class ServerWAL {
-    private static final String LOG_PATH01 = "logs.txt";
-    private static final String LOG_PATH02 = "logs.txt";
-    private static final String LOG_PATH03 = "logs.txt";
+    private static final String LOG_PATH01 = "logs1.txt";
+    private static final String LOG_PATH02 = "logs2.txt";
+    private static final String LOG_PATH03 = "logs3.txt";
 
 
 

@@ -17,7 +17,8 @@ public class ClientTest {
 
             System.out.println("Iniciando o servidor cliente...");
 
-            String msg = "criar;2529;vinicius\n";
+            //String msg = "criar;2526;vinicius\n";
+            String msg = "saldo;2526\n";
 
             // msg = sc.nextLine();
             System.out.println("Mensagem: " + msg);

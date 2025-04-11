@@ -22,11 +22,11 @@ public class ServerBanco implements Serializable {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.scheduleAtFixedRate(ServerBanco::monitoramento, 0, 30, TimeUnit.SECONDS);
 
-        System.out.println("AQUIIIIIIII");
+
         var serverSocket = new ServerSocket(6000);
         var executor = Executors.newVirtualThreadPerTaskExecutor();
 
-        System.out.println("AQUIIIIIIII");
+
 
         while (true) {
             var clientSocket = serverSocket.accept();
@@ -43,7 +43,7 @@ public class ServerBanco implements Serializable {
              BufferedReader request = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter response = new PrintWriter(socket.getOutputStream(), true)) {
 
-            System.out.println("AQUIIIIIIII 01");
+
 
             String msg = request.readLine();
             StringTokenizer tokenizer = new StringTokenizer(msg, ";");
@@ -51,7 +51,7 @@ public class ServerBanco implements Serializable {
             int accNum = Integer.parseInt(tokenizer.nextToken());
             int lastDigit = accNum % 10;
 
-            System.out.println("AQUIIIIIIII");
+
 
             int portaDestino;
             int bloco;
@@ -72,7 +72,6 @@ public class ServerBanco implements Serializable {
 
             boolean servidorAtivo = true;
 
-            System.out.println("AQUIIIIIIIIAAAAAAAAAAA");
 
             for(var ativo : ativos) {
                 System.out.println("Portaaa: " + ativo.getPorta());
@@ -101,6 +100,7 @@ public class ServerBanco implements Serializable {
                 String checkError = tokenizerAux.nextToken();
 
                 if (checkError.equals("error")) {
+                    System.out.println("Error");
                     respBanco = respBanco.substring(6);
                 } else {
                     try (Socket logSocket = new Socket("localhost", 9000)) {

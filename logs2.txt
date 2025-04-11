@@ -1,0 +1,5 @@
+2;criar;2529;vinicius
+2;criar;2526;vinicius
+2;depositar;2526;500
+2;sacar;2526;200
+2;saldo;2526
