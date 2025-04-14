@@ -9,6 +9,10 @@ public class ProcessadorBancario {
         this.banco = banco;
     }
 
+    public void setBanco(Banco banco) {
+        this.banco = banco;
+    }
+
     public String processar(String request) {
 
         try {

@@ -117,7 +117,7 @@ public class Banco implements Serializable {
             return;
         }
 
-        System.out.println("=== LISTA DE CONTAS ===");
+        System.out.println("====== LISTA DE CONTAS ======");
         for (Map.Entry<Integer, Object> entry : contas.entrySet()) {
             Integer numConta = entry.getKey();
             Map<String, Integer> dados = (Map<String, Integer>) entry.getValue();
@@ -128,7 +128,7 @@ public class Banco implements Serializable {
                 System.out.printf("Conta: %d | Nome: %s | Saldo: R$ %d\n", numConta, nome, saldo);
             }
         }
-        System.out.println("=======================");
+        System.out.println("=============================================");
     }
 
 

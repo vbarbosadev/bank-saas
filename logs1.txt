@@ -1,2 +1,0 @@
-1;criar;2522;vinicius
-1;depositar;2522;500

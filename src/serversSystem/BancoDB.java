@@ -5,6 +5,8 @@ import objetos.Banco;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -35,12 +37,35 @@ public class BancoDB {
         }
     }
 
+    public static int getPort(Socket socket){
+        int port = socket.getPort();
+        int lastDigit = port % 10;
+        return lastDigit;
+    }
+
     public static void start(Socket s) {
-        try (s; ObjectInputStream in = new ObjectInputStream(s.getInputStream())) {
+        try (s; ObjectInputStream in = new ObjectInputStream(s.getInputStream());
+            ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream())) {
             Banco bancoRecebido = (Banco) in.readObject();
             mesclarBancos(bancoRecebido);
             salvarBanco(); // salva após mesclagem
             System.out.println("Banco mesclado e salvo com sucesso.");
+            // ******
+            switch (getPort(s)){
+                case 1:
+                    Files.deleteIfExists(Path.of("logs1.txt"));
+                    break;
+                case 2:
+                    Files.deleteIfExists(Path.of("logs2.txt"));
+                    break;
+                case 3:
+                    Files.deleteIfExists(Path.of("logs3.txt"));
+                    break;
+            }
+            System.out.println("Logs deletados com sucesso.");
+            out.writeObject(bancoDB);
+            out.flush();
+
         } catch (IOException | ClassNotFoundException e) {
             System.err.println("Erro ao receber ou salvar dados do banco: " + e.getMessage());
         }

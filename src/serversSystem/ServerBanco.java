@@ -13,14 +13,14 @@ import java.util.concurrent.TimeUnit;
 
 public class ServerBanco implements Serializable {
     private static int qtdClientes = 0;
-    private static MonitorDeInstancias monitor;
+    private static MonitorDeInstancias monitor = new MonitorDeInstancias();
     private static List<ListaDeServers> ativos = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
         System.out.println("Iniciando Servidor...");
 
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(ServerBanco::monitoramento, 0, 30, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(() -> monitoramento(), 0, 30, TimeUnit.SECONDS);
 
 
         var serverSocket = new ServerSocket(6000);
@@ -67,14 +67,13 @@ public class ServerBanco implements Serializable {
                 bloco = 2;
             } else {
                 portaDestino = 7003;
-                bloco = 2;
+                bloco = 3;
             }
 
             boolean servidorAtivo = true;
 
 
             for(var ativo : ativos) {
-                System.out.println("Portaaa: " + ativo.getPorta());
                 if(ativo.getPorta() == portaDestino){
                     servidorAtivo = true;
                 } else {
@@ -101,11 +100,12 @@ public class ServerBanco implements Serializable {
 
                 if (checkError.equals("error")) {
                     System.out.println("Error");
-                    respBanco = respBanco.substring(6);
+
                 } else {
                     try (Socket logSocket = new Socket("localhost", 9000)) {
                         var logOut = new PrintWriter(logSocket.getOutputStream(), true);
                         logOut.println(bloco + ";" + msg);  // WAL antes da operação
+
                         System.out.println("Log enviado com sucesso para o bloco " + bloco + "!");
                     }
                 }
@@ -121,7 +121,9 @@ public class ServerBanco implements Serializable {
     }
 
     private static void monitoramento() {
+        System.out.println("Monitorou");
         monitor.iniciarMonitoramento();
-        ativos = monitor.getServidorAtivo();
+
+        ativos = MonitorDeInstancias.getServidorAtivo();
     }
 }

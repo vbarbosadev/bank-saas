@@ -1,15 +1,26 @@
 package serversSystem;
 
+import WAL.ReplayerDeLog;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.*;
 
 public class MonitorDeInstancias {
-    private static List<ListaDeServers> auxiliares = new ArrayList<>();
+    private static List<ListaDeServers> auxiliares;
 
-    public MonitorDeInstancias(List<ListaDeServers> listaInicial) {
-        this.auxiliares.addAll(listaInicial);
+
+    public MonitorDeInstancias() {
+        ListaDeServers s1 = new ListaDeServers("localhost", 7001);
+        ListaDeServers s2 = new ListaDeServers("localhost", 7002);
+        ListaDeServers s3 = new ListaDeServers("localhost", 7003);
+
+        auxiliares = new ArrayList<>();
+        auxiliares.add(s1);
+        auxiliares.add(s2);
+        auxiliares.add(s3);
+
     }
 
     public static void addServer(ListaDeServers server) {
@@ -18,38 +29,57 @@ public class MonitorDeInstancias {
 
     public void iniciarMonitoramento() {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(this::verificarHeartbeats, 0, 10, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(MonitorDeInstancias::verificarHeartbeats, 0, 10, TimeUnit.SECONDS);
     }
 
-    private void verificarHeartbeats() {
+    private static void verificarHeartbeats() {
+
         for (ListaDeServers servidor : auxiliares) {
-            try (Socket socket = new Socket(servidor.host, servidor.porta);
+            try (Socket socket = new Socket(servidor.getHost(), servidor.getPorta());
                  PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                  BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+
 
                 out.println("PING");
                 socket.setSoTimeout(3000); // timeout de 3 segundos
                 String resposta = in.readLine();
 
                 if ("PONG".equals(resposta)) {
-                    servidor.ativo = true;
-                    System.out.println("[Monitor] Servidor ativo: " + servidor.host + ":" + servidor.porta);
+                    servidor.setAtivo(true);
+                    System.out.println("[Monitor] Servidor ativo: " + servidor.getHost() + ":" + servidor.getPorta());
                 } else {
-                    servidor.ativo = false;
-                    System.out.println("[Monitor] Servidor inativo: " + servidor.host + ":" + servidor.porta);
+                    servidor.setAtivo(false);
+                    servidor.setLastPing(false);
+                    System.out.println("[Monitor] Servidor inativo: " + servidor.getHost() + ":" + servidor.getPorta());
+                }
+                System.out.println("lastPing: " + servidor.isLastPing());
+
+
+                if (!servidor.isLastPing() & servidor.isAtivo()) {
+
+                    System.out.println("ATIVOU PQ TAVA DEASATIVADOOOOOO");
+                    ReplayerDeLog.reproduzir(servidor.getPorta(), servidor.getBloco());
+                    servidor.setLastPing(true);
+                    System.out.println("lastPing: " + servidor.isLastPing());
                 }
 
+
             } catch (IOException e) {
-                servidor.ativo = false;
-                System.out.println("[Monitor] Falha no servidor: " + servidor.host + ":" + servidor.porta);
+                servidor.setAtivo(false);
+                servidor.setLastPing(false);
+                System.out.println("[Monitor] Falha no servidor: " + servidor.getHost() + ":" + servidor.getPorta());
+                System.out.println("lastPing: " + servidor.isLastPing());
             }
+            System.out.println();
         }
+        System.out.println();
     }
 
-    public List<ListaDeServers> getServidorAtivo() {
+    public static List<ListaDeServers> getServidorAtivo() {
         List<ListaDeServers> ativos = new ArrayList<>();
         for (ListaDeServers servidor : auxiliares) {
-            if (servidor.ativo) {
+            if (servidor.isAtivo()) {
                 ativos.add(servidor);
             }
         }
