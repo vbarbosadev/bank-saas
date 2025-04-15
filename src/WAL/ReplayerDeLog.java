@@ -31,14 +31,16 @@ public class ReplayerDeLog {
             return;
         }
 
+        int i = 0;
         try {
             List<String> linhas = Files.readAllLines(path);
-            for (String linha : linhas) {
-                String[] partes = linha.split(";", 2); // remove o "bloco;"
-                if (partes.length < 2) continue;
-                String msg = partes[1];
+            for (String msg : linhas) {
                 enviarRequest(msg);
+                i++;
+                System.out.println(i);
             }
+
+            enviarRequest("UPDATE");
 
             System.out.println("Reexecução do log do bloco " + bloco + " concluída.");
         } catch (IOException e) {
@@ -58,6 +60,7 @@ public class ReplayerDeLog {
         } catch (IOException e) {
             System.err.println("Erro ao reenviar operação para servidor na porta " + portaServidor + ": " + e.getMessage());
         }
+
     }
 
     private static String getCaminhoLog() {

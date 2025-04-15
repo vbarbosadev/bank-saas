@@ -53,13 +53,13 @@ public class BancoDB {
             // ******
             switch (getPort(s)){
                 case 1:
-                    Files.deleteIfExists(Path.of("logs1.txt"));
+                    Files.deleteIfExists(Path.of("log_bloco1.txt"));
                     break;
                 case 2:
-                    Files.deleteIfExists(Path.of("logs2.txt"));
+                    Files.deleteIfExists(Path.of("log_bloco2.txt"));
                     break;
                 case 3:
-                    Files.deleteIfExists(Path.of("logs3.txt"));
+                    Files.deleteIfExists(Path.of("log_bloco3.txt"));
                     break;
             }
             System.out.println("Logs deletados com sucesso.");

@@ -1,7 +1,0 @@
-3;sacar;2526;2404
-3;depositar;2526;8880
-3;depositar;2526;8880
-3;criar;2526;vinicius
-3;sacar;2526;2404
-3;sacar;2526;2454
-3;sacar;2526;2454

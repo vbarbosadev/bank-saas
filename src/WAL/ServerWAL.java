@@ -40,6 +40,10 @@ public class ServerWAL {
             var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             String msg = in.readLine();
             String bloco = getBloco(msg);
+            String[] partes = msg.split(";", 2); // remove o "bloco;"
+            if (partes.length < 2){
+                msg = partes[1];
+            }
 
             switch (bloco){
                 case "1":

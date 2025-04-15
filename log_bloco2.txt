@@ -1,0 +1,4 @@
+2;criar;4443;cliente4443
+2;criar;5554;cliente5554
+2;criar;6665;cliente6665
+2;criar;7773;cliente7773

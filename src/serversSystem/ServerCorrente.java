@@ -26,7 +26,8 @@ public class ServerCorrente {
 
         // ✅ Thread agendada para enviar o banco a cada 2 minutos
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(() -> enviarBancoParaAuxiliar(), 0, 5, TimeUnit.MINUTES);
+        scheduler.scheduleAtFixedRate(() -> enviarBancoParaAuxiliar(), 0
+                , 60, TimeUnit.SECONDS);
 
         // 🔥 Virtual thread para cada requisição
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
@@ -56,12 +57,16 @@ public class ServerCorrente {
                 output.println("PONG");
                 return;
             }
+            if("UPDATE".equals(msg)){
+                enviarBancoParaAuxiliar();
+                return;
+            }
 
             System.out.println("Operação recebida de " + LeaderSocket.getInetAddress() + ": " + msg);
 
 
             String reply = process.processar(msg);
-            output.println("Server response: " + reply);
+            output.println(reply);
 
         } catch (IOException e) {
             System.err.println("Error handling client: " + e.getMessage());

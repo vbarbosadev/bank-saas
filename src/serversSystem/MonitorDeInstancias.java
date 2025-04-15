@@ -29,7 +29,7 @@ public class MonitorDeInstancias {
 
     public void iniciarMonitoramento() {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(MonitorDeInstancias::verificarHeartbeats, 0, 10, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(MonitorDeInstancias::verificarHeartbeats, 0, 20, TimeUnit.SECONDS);
     }
 
     private static void verificarHeartbeats() {
@@ -47,21 +47,17 @@ public class MonitorDeInstancias {
 
                 if ("PONG".equals(resposta)) {
                     servidor.setAtivo(true);
-                    System.out.println("[Monitor] Servidor ativo: " + servidor.getHost() + ":" + servidor.getPorta());
+                    //System.out.println("[Monitor] Servidor ativo: " + servidor.getHost() + ":" + servidor.getPorta());
                 } else {
                     servidor.setAtivo(false);
                     servidor.setLastPing(false);
-                    System.out.println("[Monitor] Servidor inativo: " + servidor.getHost() + ":" + servidor.getPorta());
+                    //System.out.println("[Monitor] Servidor inativo: " + servidor.getHost() + ":" + servidor.getPorta());
                 }
-                System.out.println("lastPing: " + servidor.isLastPing());
 
 
                 if (!servidor.isLastPing() & servidor.isAtivo()) {
-
-                    System.out.println("ATIVOU PQ TAVA DEASATIVADOOOOOO");
-                    ReplayerDeLog.reproduzir(servidor.getPorta(), servidor.getBloco());
                     servidor.setLastPing(true);
-                    System.out.println("lastPing: " + servidor.isLastPing());
+                    ReplayerDeLog.reproduzir(servidor.getPorta(), servidor.getBloco());
                 }
 
 
@@ -69,7 +65,6 @@ public class MonitorDeInstancias {
                 servidor.setAtivo(false);
                 servidor.setLastPing(false);
                 System.out.println("[Monitor] Falha no servidor: " + servidor.getHost() + ":" + servidor.getPorta());
-                System.out.println("lastPing: " + servidor.isLastPing());
             }
             System.out.println();
         }

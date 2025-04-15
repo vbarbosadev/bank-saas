@@ -70,22 +70,22 @@ public class ServerBanco implements Serializable {
                 bloco = 3;
             }
 
-            boolean servidorAtivo = true;
-
-
-            for(var ativo : ativos) {
-                if(ativo.getPorta() == portaDestino){
-                    servidorAtivo = true;
-                } else {
-                    servidorAtivo = false;
-                }
-            }
-
-            if (!servidorAtivo) {
-                response.println("error;Servidor indisponível na porta " + portaDestino);
-                System.out.println("Servidor inativo na porta " + portaDestino + ", operação não realizada.");
-                return;
-            }
+//            boolean servidorAtivo = true;
+//
+//            ativos = MonitorDeInstancias.getServidorAtivo();
+//            for(var ativo : ativos) {
+//                if(ativo.getPorta() == portaDestino){
+//                    servidorAtivo = true;
+//                } else {
+//                    servidorAtivo = false;
+//                }
+//            }
+//
+//            if (!servidorAtivo) {
+//                response.println("error;Servidor indisponível na porta " + portaDestino);
+//                System.out.println("Servidor inativo na porta " + portaDestino + ", operação não realizada.");
+//                return;
+//            }
 
             try (Socket auxSocket = new Socket("localhost", portaDestino)) {
                 System.out.println("Enviando para o servidor da porta " + portaDestino + "!");
@@ -95,20 +95,18 @@ public class ServerBanco implements Serializable {
                 auxOut.println(msg);
                 String respBanco = auxIn.readLine();
 
+                System.out.println("Resp banco: " + respBanco);
+
                 StringTokenizer tokenizerAux = new StringTokenizer(respBanco, ";");
                 String checkError = tokenizerAux.nextToken();
 
-                if (checkError.equals("error")) {
-                    System.out.println("Error");
 
-                } else {
                     try (Socket logSocket = new Socket("localhost", 9000)) {
                         var logOut = new PrintWriter(logSocket.getOutputStream(), true);
                         logOut.println(bloco + ";" + msg);  // WAL antes da operação
 
                         System.out.println("Log enviado com sucesso para o bloco " + bloco + "!");
                     }
-                }
                 response.println(respBanco);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -121,9 +119,6 @@ public class ServerBanco implements Serializable {
     }
 
     private static void monitoramento() {
-        System.out.println("Monitorou");
         monitor.iniciarMonitoramento();
-
-        ativos = MonitorDeInstancias.getServidorAtivo();
     }
 }

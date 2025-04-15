@@ -25,7 +25,7 @@ public class ApiGateway {
     private static void handleClient(Socket socket) {
         try (socket;
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter output = new PrintWriter(socket.getOutputStream(), true)) {
+             ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream())) {
 
             String request = in.readLine();
 
@@ -34,12 +34,16 @@ public class ApiGateway {
             // Encaminhar para o servidor principal
             try (Socket server = new Socket("localhost", 6000);
                  BufferedReader serverIn = new BufferedReader(new InputStreamReader(server.getInputStream()));
+
                  PrintWriter serverOut = new PrintWriter(server.getOutputStream(), true)){
 
                 serverOut.println(request);
                 System.out.println("request " + request);
                 String response = serverIn.readLine();
-                output.println(response);
+                output.writeObject(response);
+                output.flush();
+                output.close();
+                in.close();
                 System.out.println("response " + response);
             }
 
