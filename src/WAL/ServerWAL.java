@@ -19,7 +19,7 @@ public class ServerWAL {
 
 
     public static void main(String[] args) throws IOException {
-        var serverSocket = new ServerSocket(9000);
+        var serverSocket = new ServerSocket(9000, 300);
         var executor = Executors.newVirtualThreadPerTaskExecutor();
 
         while (true) {
@@ -40,23 +40,24 @@ public class ServerWAL {
             var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             String msg = in.readLine();
             String bloco = getBloco(msg);
-            String[] partes = msg.split(";", 2); // remove o "bloco;"
-            if (partes.length < 2){
-                msg = partes[1];
-            }
+            String[] partes = msg.split(";", 2); // divide em 2 partes
+            String restante = partes[1];
+            System.out.println(restante); // saída: cmd;num;val
+
+
 
             switch (bloco){
                 case "1":
-                    Files.writeString(Path.of(LOG_PATH01), msg + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-                    System.out.println("Log salvo no bloco 1: " + msg);
+                    Files.writeString(Path.of(LOG_PATH01), restante + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                    System.out.println("Log salvo no bloco 1: " + restante);
                     break;
                 case "2":
-                    Files.writeString(Path.of(LOG_PATH02), msg + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-                    System.out.println("Log salvo no bloco 2: " + msg);
+                    Files.writeString(Path.of(LOG_PATH02), restante + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                    System.out.println("Log salvo no bloco 2: " + restante);
                     break;
                 case "3":
-                    Files.writeString(Path.of(LOG_PATH03), msg + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-                    System.out.println("Log salvo no bloco 3: " + msg);
+                    Files.writeString(Path.of(LOG_PATH03), restante + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                    System.out.println("Log salvo no bloco 3: " + restante);
                     break;
             }
 

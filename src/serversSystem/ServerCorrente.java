@@ -31,7 +31,7 @@ public class ServerCorrente {
 
         // 🔥 Virtual thread para cada requisição
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-             ServerSocket server = new ServerSocket(PORT, 1000)) {
+             ServerSocket server = new ServerSocket(PORT, 100)) {
 
 
 

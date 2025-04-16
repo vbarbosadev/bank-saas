@@ -23,7 +23,7 @@ public class ServerBanco implements Serializable {
         scheduler.scheduleAtFixedRate(() -> monitoramento(), 0, 30, TimeUnit.SECONDS);
 
 
-        var serverSocket = new ServerSocket(6000);
+        var serverSocket = new ServerSocket(6000, 300);
         var executor = Executors.newVirtualThreadPerTaskExecutor();
 
 

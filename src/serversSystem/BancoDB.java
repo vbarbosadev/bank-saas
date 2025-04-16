@@ -24,7 +24,7 @@ public class BancoDB {
             System.out.println("Banco salvo antes de encerrar.");
         }));
 
-        ServerSocket mysocket = new ServerSocket(7040);
+        ServerSocket mysocket = new ServerSocket(7040, 300);
         var executor = Executors.newVirtualThreadPerTaskExecutor();
 
         System.out.println("Servidor BancoDB ativo na porta 7040...");
