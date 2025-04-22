@@ -38,7 +38,7 @@ public class ProcessadorBancario {
                     return ("Conta >" + numConta + "< criada com sucesso!");
                 } else {
                     System.out.println("Erro ao criar conta!");
-                    return ("Erro, número de conta " + numConta + "já existe.");
+                    return ("Erro número de conta " + numConta + "já existe.");
                 }
             case "sacar":
                 numConta = Integer.parseInt(tokenizer.nextToken());

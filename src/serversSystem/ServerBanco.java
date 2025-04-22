@@ -19,11 +19,14 @@ public class ServerBanco implements Serializable {
     public static void main(String[] args) throws IOException {
         System.out.println("Iniciando Servidor...");
 
+        int PORT = Integer.parseInt(args[0]);
+        int BACKLOG = Integer.parseInt(args[1]);
+
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(() -> monitoramento(), 0, 30, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(() -> monitoramento(), 0, 20, TimeUnit.SECONDS);
 
 
-        var serverSocket = new ServerSocket(6000, 300);
+        var serverSocket = new ServerSocket(PORT, BACKLOG);
         var executor = Executors.newVirtualThreadPerTaskExecutor();
 
 
@@ -70,22 +73,21 @@ public class ServerBanco implements Serializable {
                 bloco = 3;
             }
 
-//            boolean servidorAtivo = true;
-//
-//            ativos = MonitorDeInstancias.getServidorAtivo();
-//            for(var ativo : ativos) {
-//                if(ativo.getPorta() == portaDestino){
-//                    servidorAtivo = true;
-//                } else {
-//                    servidorAtivo = false;
-//                }
-//            }
-//
-//            if (!servidorAtivo) {
-//                response.println("error;Servidor indisponível na porta " + portaDestino);
-//                System.out.println("Servidor inativo na porta " + portaDestino + ", operação não realizada.");
-//                return;
-//            }
+            boolean servidorAtivo = false;
+
+            ativos = MonitorDeInstancias.getServidorAtivo();
+            for(var ativo : ativos) {
+                if (ativo.getPorta() == portaDestino) {
+                    servidorAtivo = true;
+                    break;
+                }
+            }
+
+            if (!servidorAtivo) {
+                response.println("Erro Servidor indisponível na porta " + portaDestino);
+                System.out.println("Servidor inativo na porta " + portaDestino + ", operação não realizada.");
+                return;
+            }
 
             try (Socket auxSocket = new Socket("localhost", portaDestino)) {
                 System.out.println("Enviando para o servidor da porta " + portaDestino + "!");
@@ -110,7 +112,8 @@ public class ServerBanco implements Serializable {
                 response.println(respBanco);
             } catch (IOException e) {
                 e.printStackTrace();
-                response.println("error;Falha ao conectar ao servidor na porta " + portaDestino);
+                System.out.println("error;Falha ao conectar ao servidor na porta " + portaDestino);
+                response.println("Erro Falha ao conectar ao servidor");
             }
 
         } catch (IOException e) {

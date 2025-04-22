@@ -13,7 +13,11 @@ public class ApiGateway {
 
     public static void main(String[] args) throws IOException {
         System.out.println("API GATEWAY");
-        ServerSocket serverSocket = new ServerSocket(5000, 300);
+
+        int PORT = Integer.parseInt(args[0]);
+        int BACKLOG = Integer.parseInt(args[1]);
+
+        ServerSocket serverSocket = new ServerSocket(PORT, BACKLOG);
         var executor = Executors.newVirtualThreadPerTaskExecutor();
 
         while (true) {
@@ -22,14 +26,15 @@ public class ApiGateway {
         }
     }
 
-    public static boolean validacaoResp(String resp) {
+    public static String validacaoResp(String resp) {
         String[] partes = resp.split(" ", 2); // divide em 2 partes
         String restante = partes[0];
-        System.out.println(restante); // saída: cmd;num;val
+        //System.out.println(restante); // saída: cmd;num;val
         if(restante.equals("Erro")) {
-            return false;
+            //System.out.println("ERROOOOOOOOOOOOOOOOOOOOR");
+            return resp;
         }
-        return true;
+        return "OK";
     }
 
 
@@ -50,20 +55,14 @@ public class ApiGateway {
                 serverOut.println(request);
                 System.out.println("request " + request);
                 String response = serverIn.readLine();
-                String out = response + "\n";
 
-                if(validacaoResp(response)) {
-                    System.out.println("resp " + response);
-                } else {
-                     out = "Erro\n";
-                }
+                response = validacaoResp(response);
 
-                output.println(out);
-
+                output.println(response);
                 output.flush();
                 output.close();
                 socket.close();
-                System.out.println("response " + response);
+                System.out.println("resp: " + response);
             }
 
 

@@ -15,7 +15,6 @@ public class ReplayerDeLog {
     private static final String LOG_PATH02 = "log_bloco2.txt";
     private static final String LOG_PATH03 = "log_bloco3.txt";
 
-
     public static void reproduzir(int porta, int b) {
         bloco = b;
         portaServidor = porta;
@@ -34,15 +33,26 @@ public class ReplayerDeLog {
         int i = 0;
         try {
             List<String> linhas = Files.readAllLines(path);
-            for (String msg : linhas) {
+            for (String linha : linhas) {
+                String[] partes = linha.split(";");
+                if (partes.length < 5) continue;
+
+                String status = partes[4];
+                if (!status.equals("PENDENTE")) continue;
+
+                String comando = partes[1];
+                String conta = partes[2];
+                String valor = partes[3];
+
+                String msg = comando + ";" + conta + ";" + valor;
                 enviarRequest(msg);
                 i++;
-                System.out.println(i);
             }
 
             enviarRequest("UPDATE");
-
             System.out.println("Reexecução do log do bloco " + bloco + " concluída.");
+            WALUtils.marcarTodosComoCommit((bloco));
+
         } catch (IOException e) {
             System.err.println("Erro ao ler log: " + e.getMessage());
         }
@@ -60,7 +70,6 @@ public class ReplayerDeLog {
         } catch (IOException e) {
             System.err.println("Erro ao reenviar operação para servidor na porta " + portaServidor + ": " + e.getMessage());
         }
-
     }
 
     private static String getCaminhoLog() {

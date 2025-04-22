@@ -1,27 +1,28 @@
 package serversSystem;
+import WAL.WALUtils;
 import objetos.Banco;
 import objetos.ProcessadorBancario;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.StringTokenizer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class ServerCorrente {
+public class ServerInstance {
 
     public static int qtdClients = 0;
     public static Banco banco = new Banco();
     public static ProcessadorBancario process = new ProcessadorBancario(banco);
+    public static int PORT = 0;
 
     public static void main(String[] args) {
 
-        int PORT = 0;
         PORT = Integer.parseInt(args[0]);
-        System.out.println("Server Auxiliar iniciado na porta: " + PORT);
+        int BACKLOG = Integer.parseInt(args[1]);
+        System.out.println("Server Auxiliar iniciado na porta: " + PORT + " com BACKLOG: " + BACKLOG);
 
 
         // ✅ Thread agendada para enviar o banco a cada 2 minutos
@@ -31,7 +32,7 @@ public class ServerCorrente {
 
         // 🔥 Virtual thread para cada requisição
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-             ServerSocket server = new ServerSocket(PORT, 100)) {
+             ServerSocket server = new ServerSocket(PORT, BACKLOG)) {
 
 
 
@@ -77,7 +78,7 @@ public class ServerCorrente {
 
     // 🚀 Função que envia o objeto Banco para o servidor auxiliar
     private static void enviarBancoParaAuxiliar() {
-        try (Socket socket = new Socket("localhost", 7040); // Porta do servidor auxiliar
+        try (Socket socket = new Socket("localhost", 8000); // Porta do servidor auxiliar
              ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
 
@@ -85,6 +86,7 @@ public class ServerCorrente {
             out.writeObject(banco);
             out.flush();
             System.out.println("[LOG] Contato com o servidor auxiliar foi bem sucedido.");
+
 
             banco = (Banco) in.readObject();
             banco.imprimirContas();
