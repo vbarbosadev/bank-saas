@@ -28,5 +28,8 @@ bin/
 ### Intellij ###
 .idea/
 
+### Lixo ###
+.lixo/
+
 ### Mac OS ###
 .DS_Store

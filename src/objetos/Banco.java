@@ -1,0 +1,138 @@
+package objetos;
+
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+
+public class Banco implements Serializable {
+
+
+    private HashMap<Integer, Object> contas = new HashMap<>();
+
+    public boolean addConta(int numconta, String nome) {
+        try {
+            if (contas.get(numconta) == null) {
+                HashMap<String, Integer> dados = new HashMap<String, Integer>();
+                dados.put(nome, 0);
+                contas.put(numconta, dados);
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+
+    public boolean sacar(int numconta, int valor) {
+
+        try {
+            Map<String, Integer> dados = (Map<String, Integer>) contas.get(numconta);
+            if (dados != null) {
+                String nome = dados.keySet().iterator().next();
+                int saldoAtual = dados.get(nome);
+                if (saldoAtual > valor) {
+                    dados.put(nome, saldoAtual - valor);
+                } else {
+                    System.out.println("Conta não encontrada.");
+                    return false;
+                }
+                return true;
+            } else {
+                System.out.println("Conta não encontrada.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return false;
+    }
+
+
+    public boolean depositar(int numconta, int valor) {
+
+        try {
+            Map<String, Integer> dados = (Map<String, Integer>) contas.get(numconta);
+            if (dados != null) {
+                // Pega o nome do cliente (única chave)
+                String nome = dados.keySet().iterator().next();
+                int saldoAtual = dados.get(nome);
+                dados.put(nome, saldoAtual + valor);
+                return true;
+            } else {
+                System.out.println("Conta não encontrada.");
+                return false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+
+    }
+
+    public int saldo(int numconta) {
+
+        try {
+            Map<String, Integer> dados = (Map<String, Integer>) contas.get(numconta);
+            if (dados != null && !dados.isEmpty()) {
+                String nome = dados.keySet().iterator().next();
+                return dados.get(nome);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+
+
+        return -1;
+    }
+
+    public HashMap<Integer, Object> getContas() {
+        return contas;
+    }
+
+    public Integer getSaldoConta(int numconta) {
+        try {
+            Map<String, Integer> dados = (Map<String, Integer>) contas.get(numconta);
+            if (dados != null && !dados.isEmpty()) {
+                String nome = dados.keySet().iterator().next();
+                return dados.get(nome);
+            } else {
+                System.out.println("Conta não encontrada.");
+                return null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public void imprimirContas() {
+        if (contas.isEmpty()) {
+            System.out.println("Nenhuma conta cadastrada.");
+            return;
+        }
+
+        System.out.println("====== LISTA DE CONTAS ======");
+        for (Map.Entry<Integer, Object> entry : contas.entrySet()) {
+            Integer numConta = entry.getKey();
+            Map<String, Integer> dados = (Map<String, Integer>) entry.getValue();
+
+            if (dados != null && !dados.isEmpty()) {
+                String nome = dados.keySet().iterator().next();
+                Integer saldo = dados.get(nome);
+                System.out.printf("Conta: %d | Nome: %s | Saldo: R$ %d\n", numConta, nome, saldo);
+            }
+        }
+        System.out.println("=============================================");
+    }
+
+
+
+
+}
+

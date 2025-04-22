@@ -1,0 +1,161 @@
+package serversSystem;
+
+import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.List;
+import java.util.Optional;
+import java.util.StringTokenizer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+
+public class ServerBanco implements Serializable {
+    private static int qtdClientes = 0;
+
+
+    private static MonitorDeInstancias monitor;
+    static Optional<ListaDeServers> ativos;
+
+
+    public static void main(String[] args) throws IOException {
+        System.out.println("Iniciando Servidor...");
+
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.scheduleAtFixedRate(ServerBanco::monitoramento, 5, 30, TimeUnit.SECONDS);
+
+
+
+        var serverSocket = new ServerSocket(6000);
+        var executor = Executors.newVirtualThreadPerTaskExecutor();
+
+        while (true) {
+            var clientSocket = serverSocket.accept();
+            executor.submit(() -> handleRequest(clientSocket));
+            qtdClientes++;
+        }
+    }
+
+
+    private static void handleRequest(Socket socket) {
+        try (socket;
+             BufferedReader request = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             PrintWriter response = new PrintWriter(socket.getOutputStream(), true);) {
+
+            String msg = request.readLine();
+
+            StringTokenizer tokenizer = new StringTokenizer(msg, ";");
+            tokenizer.nextToken();
+            int accNum = Integer.parseInt(tokenizer.nextToken());
+            int lastDigit = accNum % 10;
+
+
+
+
+            switch (lastDigit){
+                case 0, 1, 2:
+                    // Encaminhar para um servidor auxiliar (ex: localhost:7000) : corrente
+                    try (Socket correnteSocket = new Socket("localhost", 7001)) {
+
+
+
+
+                        System.out.println("Enviando para o servidor de conta corrente!");
+                        var auxOut = new PrintWriter(correnteSocket.getOutputStream(), true);
+                        var auxIn = new BufferedReader(new InputStreamReader(correnteSocket.getInputStream()));
+                        auxOut.println(msg);
+                        String respBanco = auxIn.readLine();
+
+                        StringTokenizer tokenizerAux = new StringTokenizer(respBanco, ";");
+                        String checkError = tokenizerAux.nextToken();
+                        if(checkError.equals("error")) {
+                            respBanco = respBanco.substring(6);
+                        } else {
+                            try (Socket logSocket = new Socket("localhost", 9000)) {
+                                var logOut = new PrintWriter(logSocket.getOutputStream(), true);
+                                msg = "1;" + msg;
+                                logOut.println(msg);  // WAL antes da operação
+                                System.out.println("Log enviado com sucesso para o bloco 1!");
+                            }
+                        }
+                        response.println(respBanco); // resposta
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    // Enviar para o servidor de log (WAL)
+
+                    break;
+                case 3, 4, 5:
+
+                    // Encaminhar para um servidor auxiliar (ex: localhost:7000) : corrente
+                    try (Socket poupancaSocket = new Socket("localhost", 7002)) {
+                        System.out.println("Enviando para o servidor do bloco 2!");
+                        var auxOut = new PrintWriter(poupancaSocket.getOutputStream(), true);
+                        var auxIn = new BufferedReader(new InputStreamReader(poupancaSocket.getInputStream()));
+                        auxOut.println(msg);
+                        String respBanco = auxIn.readLine();
+
+                        StringTokenizer tokenizerAux = new StringTokenizer(respBanco, ";");
+                        String checkError = tokenizerAux.nextToken();
+
+                        if(checkError.equals("error")) {
+                            respBanco = respBanco.substring(6);
+                        } else {
+                            // Enviar para o servidor de log (WAL)
+                            try (Socket logSocket = new Socket("localhost", 9000)) {
+                                var logOut = new PrintWriter(logSocket.getOutputStream(), true);
+                                msg = "2;" + msg;
+                                logOut.println(msg);  // WAL antes da operação
+                                System.out.println("Log enviado com sucesso para o bloco 2!");
+                            }
+                        }
+
+                        response.println(respBanco); // resposta
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case 6, 7, 8, 9:
+                    // Encaminhar para um servidor auxiliar (ex: localhost:7000) : corrente
+                    try (Socket poupancaSocket = new Socket("localhost", 7003)) {
+                        System.out.println("Enviando para o servidor de conta poupança!");
+                        var auxOut = new PrintWriter(poupancaSocket.getOutputStream(), true);
+                        var auxIn = new BufferedReader(new InputStreamReader(poupancaSocket.getInputStream()));
+                        auxOut.println(msg);
+                        String respBanco = auxIn.readLine();
+
+                        StringTokenizer tokenizerAux = new StringTokenizer(respBanco, ";");
+                        String checkError = tokenizerAux.nextToken();
+
+                        if(checkError.equals("error")) {
+                            respBanco = respBanco.substring(6);
+                        } else {
+                            // Enviar para o servidor de log (WAL)
+                            try (Socket logSocket = new Socket("localhost", 9000)) {
+                                var logOut = new PrintWriter(logSocket.getOutputStream(), true);
+                                msg = "2;" + msg;
+                                logOut.println(msg);  // WAL antes da operação
+                                System.out.println("Log enviado com sucesso para o bloco 2!");
+                            }
+                        }
+
+                        response.println(respBanco); // resposta
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        };
+
+
+    }
+    private static void monitoramento() {
+        monitor.iniciarMonitoramento();
+        ativos = monitor.getServidorAtivo();
+
+    }
+}
