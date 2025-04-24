@@ -38,7 +38,7 @@ public class ProcessadorBancario {
                     return ("Conta >" + numConta + "< criada com sucesso!");
                 } else {
                     System.out.println("Erro ao criar conta!");
-                    return ("Erro número de conta " + numConta + "já existe.");
+                    return ("Erro de transação: Erro número de conta " + numConta + "já existe.");
                 }
             case "sacar":
                 numConta = Integer.parseInt(tokenizer.nextToken());
@@ -49,9 +49,9 @@ public class ProcessadorBancario {
                 } else {
                     System.out.println("Erro ao sacar!");
                     if(banco.getSaldoConta(numConta) < valor){
-                        return ("Erro ao sacar, limite não disponível!");
+                        return ("Erro de transação: Erro ao sacar, limite não disponível!");
                     }
-                    return ("Erro ao sacar!");
+                    return ("Erro de transação: Erro ao sacar!");
                 }
             case "depositar":
                 numConta = Integer.parseInt(tokenizer.nextToken());
@@ -61,7 +61,7 @@ public class ProcessadorBancario {
                     return ("Depósito realizado. Novo saldo da conta >" + numConta + "< é de " + banco.getSaldoConta(numConta));
                 } else {
                     System.out.println("Erro ao depositar!");
-                    return ("Erro ao depositar, conta" + numConta + " não existe");
+                    return ("Erro de transação: Erro ao depositar, conta" + numConta + " não existe");
                 }
             case "saldo":
                 numConta = Integer.parseInt(tokenizer.nextToken());
@@ -70,10 +70,10 @@ public class ProcessadorBancario {
                     return ("O saldo da conta é de " + banco.getSaldoConta(numConta));
                 } else {
                     System.out.println("Erro ao consultar o saldo!");
-                    return ("Erro ao consultar o saldo");
+                    return ("Erro de transação: Erro ao consultar o saldo");
                 }
             default:
-                return "Erro comando desconhecido! " + comando;
+                return "Erro de transação: Erro comando desconhecido! " + comando;
         }
     }
 }

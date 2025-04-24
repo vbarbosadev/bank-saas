@@ -28,8 +28,12 @@ public class MonitorDeInstancias {
     }
 
     public void iniciarMonitoramento() {
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(MonitorDeInstancias::verificarHeartbeats, 0, 20, TimeUnit.SECONDS);
+//        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+//        scheduler.scheduleAtFixedRate(MonitorDeInstancias::verificarHeartbeats, 0, 20, TimeUnit.SECONDS);
+        System.out.println("[Monitor] Iniciando Monitoramento:");
+        verificarHeartbeats();
+        System.out.println();
+
     }
 
     private static void verificarHeartbeats() {
@@ -47,11 +51,11 @@ public class MonitorDeInstancias {
 
                 if ("PONG".equals(resposta)) {
                     servidor.setAtivo(true);
-                    //System.out.println("[Monitor] Servidor ativo: " + servidor.getHost() + ":" + servidor.getPorta());
+                    System.out.println("[Monitor] Servidor ativo: " + servidor.getHost() + ":" + servidor.getPorta());
                 } else {
                     servidor.setAtivo(false);
                     servidor.setLastPing(false);
-                    //System.out.println("[Monitor] Servidor inativo: " + servidor.getHost() + ":" + servidor.getPorta());
+                    System.out.println("[Monitor] Servidor inativo: " + servidor.getHost() + ":" + servidor.getPorta());
                 }
 
 
@@ -66,9 +70,7 @@ public class MonitorDeInstancias {
                 servidor.setLastPing(false);
                 System.out.println("[Monitor] Falha no servidor: " + servidor.getHost() + ":" + servidor.getPorta());
             }
-            System.out.println();
         }
-        System.out.println();
     }
 
     public static List<ListaDeServers> getServidorAtivo() {

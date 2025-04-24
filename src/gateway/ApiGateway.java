@@ -27,12 +27,14 @@ public class ApiGateway {
     }
 
     public static String validacaoResp(String resp) {
-        String[] partes = resp.split(" ", 2); // divide em 2 partes
-        String restante = partes[0];
+        String[] partes = resp.split(":", 2); // divide em 2 partes
+        String erro = partes[0];
         //System.out.println(restante); // saída: cmd;num;val
-        if(restante.equals("Erro")) {
+        if(erro.equals("Erro de transação")) {
             //System.out.println("ERROOOOOOOOOOOOOOOOOOOOR");
-            return resp;
+            return "OK";
+        } else if (erro.equals("Erro")) {
+            return erro;
         }
         return "OK";
     }

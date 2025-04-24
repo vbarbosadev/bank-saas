@@ -6,16 +6,16 @@ import objetos.ProcessadorBancario;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ServerInstance {
 
-    public static int qtdClients = 0;
-    public static Banco banco = new Banco();
-    public static ProcessadorBancario process = new ProcessadorBancario(banco);
+    public static AtomicInteger qtdClients = new AtomicInteger(0);
+    public static final Banco banco = new Banco(); // usado como lock também
+    public static final ProcessadorBancario process = new ProcessadorBancario(banco);
     public static int PORT = 0;
 
     public static void main(String[] args) {
@@ -23,23 +23,19 @@ public class ServerInstance {
         PORT = Integer.parseInt(args[0]);
         int BACKLOG = Integer.parseInt(args[1]);
         System.out.println("Server Auxiliar iniciado na porta: " + PORT + " com BACKLOG: " + BACKLOG);
+        System.out.println();
 
-
-        // ✅ Thread agendada para enviar o banco a cada 2 minutos
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(() -> enviarBancoParaAuxiliar(), 0
-                , 60, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(() -> enviarBancoParaAuxiliar(), 10, 120, TimeUnit.SECONDS);
 
-        // 🔥 Virtual thread para cada requisição
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
              ServerSocket server = new ServerSocket(PORT, BACKLOG)) {
 
-
-
             while (true) {
                 Socket LeaderSocket = server.accept();
-                executor.execute(() -> handleClient(LeaderSocket, process));
-                qtdClients++;
+                executor.execute(() -> handleClient(LeaderSocket));
+                qtdClients.incrementAndGet();
+                System.out.println(qtdClients.get() + " clientes");
             }
 
         } catch (IOException e) {
@@ -47,60 +43,84 @@ public class ServerInstance {
         }
     }
 
-    private static void handleClient(Socket LeaderSocket, ProcessadorBancario process) {
+    private static void handleClient(Socket LeaderSocket) {
         try (LeaderSocket;
              BufferedReader input = new BufferedReader(new InputStreamReader(LeaderSocket.getInputStream()));
              PrintWriter output = new PrintWriter(LeaderSocket.getOutputStream(), true)) {
-
 
             String msg = input.readLine();
             if ("PING".equals(msg)) {
                 output.println("PONG");
                 return;
             }
-            if("UPDATE".equals(msg)){
+            if ("COMMIT".equals(msg)) {
                 enviarBancoParaAuxiliar();
                 return;
             }
 
             System.out.println("Operação recebida de " + LeaderSocket.getInetAddress() + ": " + msg);
 
+            String reply;
+            synchronized (banco) { // proteger o acesso ao banco
+                reply = process.processar(msg);
+            }
 
-            String reply = process.processar(msg);
             output.println(reply);
 
         } catch (IOException e) {
             System.err.println("Error handling client: " + e.getMessage());
         } finally {
-            qtdClients--;
+            qtdClients.decrementAndGet();
         }
     }
 
     // 🚀 Função que envia o objeto Banco para o servidor auxiliar
     private static void enviarBancoParaAuxiliar() {
-        try (Socket socket = new Socket("localhost", 8000); // Porta do servidor auxiliar
-             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-             ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
-
-            banco.imprimirContas();
-            out.writeObject(banco);
-            out.flush();
-            System.out.println("[LOG] Contato com o servidor auxiliar foi bem sucedido.");
+        synchronized (banco) {  // Garantir que o banco não seja alterado durante o envio ou recebimento
+            try (Socket socket = new Socket("localhost", 8000); // Porta do servidor auxiliar
+                 ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                 ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
 
 
-            banco = (Banco) in.readObject();
-            banco.imprimirContas();
-            process.setBanco(banco);
 
-        } catch (IOException e) {
-            System.err.println("[LOG] Falha ao enviar banco para o auxiliar: " + e.getMessage());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+                // Enviar o objeto banco
+                out.writeObject(banco);
+                out.flush();
+                System.out.println("[LOG] Contato com o database foi bem sucedido.\n");
+
+                // Atualizar o banco com a resposta do servidor auxiliar
+                Banco bancoNovo = (Banco) in.readObject();
+                mesclarBancos(bancoNovo);
+                process.setBanco(banco);  // Garantir que o processador também tenha o banco atualizado
+                Thread.sleep(500);
+            } catch (IOException e) {
+                System.err.println("[LOG] Falha ao enviar banco para o auxiliar: " + e.getMessage());
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
-
     }
+
+    private static synchronized void mesclarBancos(Banco recebido) {
+        HashMap<Integer, Object> contasRecebidas = recebido.getContas();
+
+        for (Map.Entry<Integer, Object> entry : contasRecebidas.entrySet()) {
+            Integer idConta = entry.getKey();
+            Map<String, Integer> dadosRecebidos = (Map<String, Integer>) entry.getValue();
+
+            Map<String, Integer> dadosAtuais = (Map<String, Integer>) banco.getContas().get(idConta);
+
+            if (dadosAtuais != null) {
+                String nome = dadosRecebidos.keySet().iterator().next();
+                Integer saldo = dadosRecebidos.get(nome);
+                dadosAtuais.put(nome, saldo);
+            } else {
+                banco.getContas().put(idConta, dadosRecebidos);
+            }
+        }
+    }
+
+
 }
-
-
-
-

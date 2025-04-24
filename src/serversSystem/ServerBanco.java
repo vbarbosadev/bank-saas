@@ -17,7 +17,7 @@ public class ServerBanco implements Serializable {
     private static List<ListaDeServers> ativos = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
-        System.out.println("Iniciando Servidor...");
+        System.out.println("Iniciando Servidor...\n");
 
         int PORT = Integer.parseInt(args[0]);
         int BACKLOG = Integer.parseInt(args[1]);
@@ -84,7 +84,7 @@ public class ServerBanco implements Serializable {
             }
 
             if (!servidorAtivo) {
-                response.println("Erro Servidor indisponível na porta " + portaDestino);
+                response.println("Erro: Servidor indisponível na porta " + portaDestino);
                 System.out.println("Servidor inativo na porta " + portaDestino + ", operação não realizada.");
                 return;
             }
@@ -112,8 +112,8 @@ public class ServerBanco implements Serializable {
                 response.println(respBanco);
             } catch (IOException e) {
                 e.printStackTrace();
-                System.out.println("error;Falha ao conectar ao servidor na porta " + portaDestino);
-                response.println("Erro Falha ao conectar ao servidor");
+                System.out.println("Falha ao conectar ao servidor na porta " + portaDestino);
+                response.println("Erro: Falha ao conectar ao servidor");
             }
 
         } catch (IOException e) {

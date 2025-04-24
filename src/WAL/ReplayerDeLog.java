@@ -49,9 +49,10 @@ public class ReplayerDeLog {
                 i++;
             }
 
-            enviarRequest("UPDATE");
             System.out.println("Reexecução do log do bloco " + bloco + " concluída.");
             WALUtils.marcarTodosComoCommit((bloco));
+
+            enviarRequest("COMMIT");
 
         } catch (IOException e) {
             System.err.println("Erro ao ler log: " + e.getMessage());

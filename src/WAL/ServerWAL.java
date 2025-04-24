@@ -19,6 +19,7 @@ public class ServerWAL {
     private static final String LOG_PATH03 = "log_bloco3.txt";
 
     public static void main(String[] args) throws IOException {
+
         int PORT = Integer.parseInt(args[0]);
         int BACKLOG = Integer.parseInt(args[1]);
 
