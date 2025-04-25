@@ -1,5 +1,6 @@
 package serversSystem;
 
+import WAL.WALUtils;
 import objetos.Banco;
 
 import java.io.*;
@@ -11,10 +12,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 
 public class BancoDB {
 
     private static Banco bancoDB;
+    private static final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public static void main(String[] args) throws IOException {
         bancoDB = carregarBanco();
@@ -41,31 +45,40 @@ public class BancoDB {
         }
     }
 
-    public static int getPort(Socket socket){
-        int port = socket.getPort();
-        int lastDigit = port % 10;
-        return lastDigit;
-    }
+
 
     public static void start(Socket s) {
         try (s; ObjectInputStream in = new ObjectInputStream(s.getInputStream());
              ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream())) {
 
             Banco bancoRecebido = (Banco) in.readObject();
-            mesclarBancos(bancoRecebido);
-            salvarBanco(); // salva após mesclagem
+            lock.writeLock().lock();
+            try {
+                mesclarBancos(bancoRecebido);
+                salvarBanco();
+            } finally {
+                lock.writeLock().unlock();
+            }
+
             if (bancoRecebido.getContas().size() > 0) {
                 System.out.println("Contas recebidas!");
             }
             System.out.println("Banco mesclado e salvo com sucesso.");
 
-            int bloco = getPort(s);
+
+            int bloco = bancoRecebido.getBloco();
             String logPath = switch (bloco) {
                 case 1 -> "log_bloco1.txt";
                 case 2 -> "log_bloco2.txt";
                 case 3 -> "log_bloco3.txt";
                 default -> null;
             };
+
+            System.out.println("[BLOCO] " + bloco);
+            WALUtils.marcarTodosComoCommit(bloco);
+
+
+
 
             System.out.println("[LOG] iniciando checagem");
 

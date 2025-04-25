@@ -8,6 +8,7 @@ public class Banco implements Serializable {
 
 
     private HashMap<Integer, Object> contas = new HashMap<>();
+    private int bloco;
 
     public boolean addConta(int numconta, String nome) {
         try {
@@ -74,8 +75,7 @@ public class Banco implements Serializable {
 
     }
 
-    public int saldo(int numconta) {
-
+    public int getSaldo(int numconta) {
         try {
             Map<String, Integer> dados = (Map<String, Integer>) contas.get(numconta);
             if (dados != null && !dados.isEmpty()) {
@@ -86,29 +86,11 @@ public class Banco implements Serializable {
             e.printStackTrace();
             return -1;
         }
-
-
         return -1;
     }
 
     public HashMap<Integer, Object> getContas() {
         return contas;
-    }
-
-    public Integer getSaldoConta(int numconta) {
-        try {
-            Map<String, Integer> dados = (Map<String, Integer>) contas.get(numconta);
-            if (dados != null && !dados.isEmpty()) {
-                String nome = dados.keySet().iterator().next();
-                return dados.get(nome);
-            } else {
-                System.out.println("Conta não encontrada.");
-                return null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     public void imprimirContas() {
@@ -131,8 +113,11 @@ public class Banco implements Serializable {
         System.out.println("=============================================");
     }
 
-
-
-
+    public int getBloco() {
+        return bloco;
+    }
+    public void setBloco(int bloco) {
+        this.bloco = bloco;
+    }
 }
 

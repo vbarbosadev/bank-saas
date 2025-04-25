@@ -99,16 +99,8 @@ public class ServerBanco implements Serializable {
 
                 System.out.println("Resp banco: " + respBanco);
 
-                StringTokenizer tokenizerAux = new StringTokenizer(respBanco, ";");
-                String checkError = tokenizerAux.nextToken();
 
 
-                    try (Socket logSocket = new Socket("localhost", 9000)) {
-                        var logOut = new PrintWriter(logSocket.getOutputStream(), true);
-                        logOut.println(bloco + ";" + msg);  // WAL antes da operação
-
-                        System.out.println("Log enviado com sucesso para o bloco " + bloco + "!");
-                    }
                 response.println(respBanco);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -124,4 +116,6 @@ public class ServerBanco implements Serializable {
     private static void monitoramento() {
         monitor.iniciarMonitoramento();
     }
+
+
 }

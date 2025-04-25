@@ -32,11 +32,15 @@ public class ApiGateway {
         //System.out.println(restante); // saída: cmd;num;val
         if(erro.equals("Erro de transação")) {
             //System.out.println("ERROOOOOOOOOOOOOOOOOOOOR");
+            System.out.println("resp: OK");
             return "OK";
         } else if (erro.equals("Erro")) {
+            System.err.println("resp: OK");
             return erro;
         }
+        System.out.println("resp: OK");
         return "OK";
+
     }
 
 
@@ -64,7 +68,7 @@ public class ApiGateway {
                 output.flush();
                 output.close();
                 socket.close();
-                System.out.println("resp: " + response);
+
             }
 
 

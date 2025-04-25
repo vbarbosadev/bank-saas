@@ -49,7 +49,7 @@ public class ReplayerDeLog {
                 i++;
             }
 
-            System.out.println("Reexecução do log do bloco " + bloco + " concluída.");
+            System.err.println("Reexecução do log do bloco " + bloco + " concluída.");
             WALUtils.marcarTodosComoCommit((bloco));
 
             enviarRequest("COMMIT");

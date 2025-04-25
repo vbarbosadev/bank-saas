@@ -44,11 +44,11 @@ public class ProcessadorBancario {
                 numConta = Integer.parseInt(tokenizer.nextToken());
                 valor = Integer.parseInt(tokenizer.nextToken());
                 if (banco.sacar(numConta, valor)) {
-                    System.out.println("Saque realizado com sucesso!");
-                    return ("Novo saldo da conta >" + numConta + "< é de " + banco.getSaldoConta(numConta));
+                    //System.out.println("Saque realizado com sucesso!");
+                    return ("Novo saldo da conta >" + numConta + "< é de " + banco.getSaldo(numConta));
                 } else {
-                    System.out.println("Erro ao sacar!");
-                    if(banco.getSaldoConta(numConta) < valor){
+                    //System.out.println("Erro ao sacar!");
+                    if(banco.getSaldo(numConta) < valor){
                         return ("Erro de transação: Erro ao sacar, limite não disponível!");
                     }
                     return ("Erro de transação: Erro ao sacar!");
@@ -57,19 +57,19 @@ public class ProcessadorBancario {
                 numConta = Integer.parseInt(tokenizer.nextToken());
                 valor = Integer.parseInt(tokenizer.nextToken());
                 if (banco.depositar(numConta, valor)) {
-                    System.out.println("Depósito realizado com sucesso!");
-                    return ("Depósito realizado. Novo saldo da conta >" + numConta + "< é de " + banco.getSaldoConta(numConta));
+                    //System.out.println("Depósito realizado com sucesso!");
+                    return ("Depósito realizado. Novo saldo da conta >" + numConta + "< é de " + banco.getSaldo(numConta));
                 } else {
-                    System.out.println("Erro ao depositar!");
+                    //System.out.println("Erro ao depositar!");
                     return ("Erro de transação: Erro ao depositar, conta" + numConta + " não existe");
                 }
             case "saldo":
                 numConta = Integer.parseInt(tokenizer.nextToken());
-                if (banco.saldo(numConta) != -1) {
-                    System.out.println("Saldo da conta " + banco.getSaldoConta(numConta));
-                    return ("O saldo da conta é de " + banco.getSaldoConta(numConta));
+                if (banco.getSaldo(numConta) != -1) {
+                    System.out.println("Saldo da conta " + banco.getSaldo(numConta));
+                    return ("O saldo da conta é de " + banco.getSaldo(numConta));
                 } else {
-                    System.out.println("Erro ao consultar o saldo!");
+                    //System.out.println("Erro ao consultar o saldo!");
                     return ("Erro de transação: Erro ao consultar o saldo");
                 }
             default:
