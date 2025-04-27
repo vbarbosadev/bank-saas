@@ -5,16 +5,27 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.StringTokenizer;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ServerBanco implements Serializable {
-    private static int qtdClientes = 0;
+
+    public static AtomicInteger qtdClients = new AtomicInteger(0);
     private static MonitorDeInstancias monitor = new MonitorDeInstancias();
     private static List<ListaDeServers> ativos = new ArrayList<>();
+
+    // Controle de portas em recuperação
+    private static Set<Integer> portasEmRecuperacao = ConcurrentHashMap.newKeySet();
+    private static Lock lock = new ReentrantLock();
+    private static Condition podeEnviar = lock.newCondition();
 
     public static void main(String[] args) throws IOException {
         System.out.println("Iniciando Servidor...");
@@ -25,28 +36,21 @@ public class ServerBanco implements Serializable {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.scheduleAtFixedRate(() -> monitoramento(), 0, 20, TimeUnit.SECONDS);
 
-
         var serverSocket = new ServerSocket(PORT, BACKLOG);
         var executor = Executors.newVirtualThreadPerTaskExecutor();
-
-
 
         while (true) {
             var clientSocket = serverSocket.accept();
             executor.submit(() -> handleRequest(clientSocket));
-            qtdClientes++;
-            System.out.println("qtd clientes: " + qtdClientes);
+            qtdClients.incrementAndGet();
+            System.out.println(qtdClients.get() + " clientes");
         }
     }
-
-
 
     private static void handleRequest(Socket socket) {
         try (socket;
              BufferedReader request = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter response = new PrintWriter(socket.getOutputStream(), true)) {
-
-
 
             String msg = request.readLine();
             StringTokenizer tokenizer = new StringTokenizer(msg, ";");
@@ -54,29 +58,20 @@ public class ServerBanco implements Serializable {
             int accNum = Integer.parseInt(tokenizer.nextToken());
             int lastDigit = accNum % 10;
 
-
-
             int portaDestino;
-            int bloco;
-
-
-
 
             if (lastDigit <= 2) {
                 portaDestino = 7001;
-                bloco = 1;
             } else if (lastDigit <= 5) {
                 portaDestino = 7002;
-                bloco = 2;
             } else {
                 portaDestino = 7003;
-                bloco = 3;
             }
 
             boolean servidorAtivo = false;
 
             ativos = MonitorDeInstancias.getServidorAtivo();
-            for(var ativo : ativos) {
+            for (var ativo : ativos) {
                 if (ativo.getPorta() == portaDestino) {
                     servidorAtivo = true;
                     break;
@@ -89,14 +84,16 @@ public class ServerBanco implements Serializable {
                 return;
             }
 
+            aguardarSeRecuperando(portaDestino);
+
             try (Socket auxSocket = new Socket("localhost", portaDestino)) {
-                System.out.println("Enviando para o servidor da porta " + portaDestino + "!");
                 var auxOut = new PrintWriter(auxSocket.getOutputStream(), true);
                 var auxIn = new BufferedReader(new InputStreamReader(auxSocket.getInputStream()));
 
                 auxOut.println(msg);
                 String respBanco = auxIn.readLine();
 
+<<<<<<< Updated upstream
                 System.out.println("Resp banco: " + respBanco);
 
                 StringTokenizer tokenizerAux = new StringTokenizer(respBanco, ";");
@@ -109,6 +106,8 @@ public class ServerBanco implements Serializable {
 
                         System.out.println("Log enviado com sucesso para o bloco " + bloco + "!");
                     }
+=======
+>>>>>>> Stashed changes
                 response.println(respBanco);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -118,10 +117,52 @@ public class ServerBanco implements Serializable {
 
         } catch (IOException e) {
             throw new RuntimeException(e);
+        } finally {
+            qtdClients.decrementAndGet();
         }
     }
 
     private static void monitoramento() {
         monitor.iniciarMonitoramento();
     }
+<<<<<<< Updated upstream
+=======
+
+
+
+    public static void pausarEnviosPara(int porta) {
+        lock.lock();
+        try {
+            portasEmRecuperacao.add(porta);
+            System.out.println("[ServerBanco] Porta " + porta + " está em recuperação. Aguardando liberação para enviar.");
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public static void liberarEnviosPara(int porta) {
+        lock.lock();
+        try {
+            portasEmRecuperacao.remove(porta);
+            System.out.println("[ServerBanco] Porta " + porta + " liberada. Reenvios permitidos.");
+            podeEnviar.signalAll();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private static void aguardarSeRecuperando(int porta) {
+        lock.lock();
+        try {
+            while (portasEmRecuperacao.contains(porta)) {
+                System.out.println("[ServerBanco] Aguardando recuperação da porta " + porta);
+                podeEnviar.await();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            lock.unlock();
+        }
+    }
+>>>>>>> Stashed changes
 }

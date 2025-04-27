@@ -16,6 +16,7 @@ public class ReplayerDeLog {
     private static final String LOG_PATH03 = "log_bloco3.txt";
 
     public static void reproduzir(int porta, int b) {
+
         bloco = b;
         portaServidor = porta;
         String caminho = getCaminhoLog();

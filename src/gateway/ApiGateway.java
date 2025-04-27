@@ -58,6 +58,9 @@ public class ApiGateway {
 
                 response = validacaoResp(response);
 
+                System.out.println("Resp banco: " + response);
+
+
                 output.println(response);
                 output.flush();
                 output.close();

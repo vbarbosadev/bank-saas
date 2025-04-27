@@ -1,15 +1,14 @@
 package serversSystem;
 
 import WAL.ReplayerDeLog;
-
 import java.io.*;
 import java.net.Socket;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MonitorDeInstancias {
-    private static List<ListaDeServers> auxiliares;
 
+    private static List<ListaDeServers> auxiliares;
 
     public MonitorDeInstancias() {
         ListaDeServers s1 = new ListaDeServers("localhost", 7001);
@@ -20,7 +19,6 @@ public class MonitorDeInstancias {
         auxiliares.add(s1);
         auxiliares.add(s2);
         auxiliares.add(s3);
-
     }
 
     public static void addServer(ListaDeServers server) {
@@ -28,43 +26,68 @@ public class MonitorDeInstancias {
     }
 
     public void iniciarMonitoramento() {
+<<<<<<< Updated upstream
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(MonitorDeInstancias::verificarHeartbeats, 0, 20, TimeUnit.SECONDS);
+=======
+        System.out.println("[Monitor] Iniciando Monitoramento:");
+        verificarHeartbeats();
+        System.out.println();
+>>>>>>> Stashed changes
     }
 
     private static void verificarHeartbeats() {
-
         for (ListaDeServers servidor : auxiliares) {
             try (Socket socket = new Socket(servidor.getHost(), servidor.getPorta());
                  PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                  BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-
-
 
                 out.println("PING");
                 socket.setSoTimeout(3000); // timeout de 3 segundos
                 String resposta = in.readLine();
 
                 if ("PONG".equals(resposta)) {
+                    if (!servidor.isAtivo()) {
+                        System.out.println("[Monitor] Servidor voltou: " + servidor.getHost() + ":" + servidor.getPorta());
+                    }
                     servidor.setAtivo(true);
+<<<<<<< Updated upstream
                     //System.out.println("[Monitor] Servidor ativo: " + servidor.getHost() + ":" + servidor.getPorta());
                 } else {
                     servidor.setAtivo(false);
                     servidor.setLastPing(false);
                     //System.out.println("[Monitor] Servidor inativo: " + servidor.getHost() + ":" + servidor.getPorta());
+=======
+                } else {
+                    servidor.setAtivo(false);
+                    servidor.setLastPing(false);
+                    System.out.println("[Monitor] Servidor inativo (sem resposta correta): " + servidor.getHost() + ":" + servidor.getPorta());
+>>>>>>> Stashed changes
                 }
 
-
-                if (!servidor.isLastPing() & servidor.isAtivo()) {
+                if (!servidor.isLastPing() && servidor.isAtivo()) {
                     servidor.setLastPing(true);
-                    ReplayerDeLog.reproduzir(servidor.getPorta(), servidor.getBloco());
-                }
 
+                    // Pausa envios enquanto recupera
+                    ServerBanco.pausarEnviosPara(servidor.getPorta());
+
+                    try {
+                        System.err.println("[Monitor] Recuperando logs para porta: " + servidor.getPorta());
+                        ReplayerDeLog.reproduzir(servidor.getPorta(), servidor.getBloco());
+                    } catch (Exception e) {
+                        System.err.println("[Monitor] Erro ao replicar log para porta " + servidor.getPorta() + ": " + e.getMessage());
+                    } finally {
+                        // Libera envios após recuperar
+                        ServerBanco.liberarEnviosPara(servidor.getPorta());
+                    }
+                }
 
             } catch (IOException e) {
+                if (servidor.isAtivo()) {
+                    System.out.println("[Monitor] Servidor caiu: " + servidor.getHost() + ":" + servidor.getPorta());
+                }
                 servidor.setAtivo(false);
                 servidor.setLastPing(false);
-                System.out.println("[Monitor] Falha no servidor: " + servidor.getHost() + ":" + servidor.getPorta());
             }
             System.out.println();
         }
