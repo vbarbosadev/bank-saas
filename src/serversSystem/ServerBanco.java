@@ -28,7 +28,7 @@ public class ServerBanco implements Serializable {
     private static Condition podeEnviar = lock.newCondition();
 
     public static void main(String[] args) throws IOException {
-        System.out.println("Iniciando Servidor...");
+        System.out.println("Iniciando Servidor...\n");
 
         int PORT = Integer.parseInt(args[0]);
         int BACKLOG = Integer.parseInt(args[1]);
@@ -79,11 +79,12 @@ public class ServerBanco implements Serializable {
             }
 
             if (!servidorAtivo) {
-                response.println("Erro Servidor indisponível na porta " + portaDestino);
+                response.println("Erro: Servidor indisponível na porta " + portaDestino);
                 System.out.println("Servidor inativo na porta " + portaDestino + ", operação não realizada.");
                 return;
             }
 
+            // Aguarda se a porta está em recuperação do log
             aguardarSeRecuperando(portaDestino);
 
             try (Socket auxSocket = new Socket("localhost", portaDestino)) {
@@ -93,26 +94,11 @@ public class ServerBanco implements Serializable {
                 auxOut.println(msg);
                 String respBanco = auxIn.readLine();
 
-<<<<<<< Updated upstream
-                System.out.println("Resp banco: " + respBanco);
-
-                StringTokenizer tokenizerAux = new StringTokenizer(respBanco, ";");
-                String checkError = tokenizerAux.nextToken();
-
-
-                    try (Socket logSocket = new Socket("localhost", 9000)) {
-                        var logOut = new PrintWriter(logSocket.getOutputStream(), true);
-                        logOut.println(bloco + ";" + msg);  // WAL antes da operação
-
-                        System.out.println("Log enviado com sucesso para o bloco " + bloco + "!");
-                    }
-=======
->>>>>>> Stashed changes
                 response.println(respBanco);
             } catch (IOException e) {
                 e.printStackTrace();
-                System.out.println("error;Falha ao conectar ao servidor na porta " + portaDestino);
-                response.println("Erro Falha ao conectar ao servidor");
+                System.out.println("Falha ao conectar ao servidor na porta " + portaDestino);
+                response.println("Erro: Falha ao conectar ao servidor");
             }
 
         } catch (IOException e) {
@@ -125,11 +111,8 @@ public class ServerBanco implements Serializable {
     private static void monitoramento() {
         monitor.iniciarMonitoramento();
     }
-<<<<<<< Updated upstream
-=======
 
-
-
+    // Métodos de controle de recuperação
     public static void pausarEnviosPara(int porta) {
         lock.lock();
         try {
@@ -164,5 +147,4 @@ public class ServerBanco implements Serializable {
             lock.unlock();
         }
     }
->>>>>>> Stashed changes
 }

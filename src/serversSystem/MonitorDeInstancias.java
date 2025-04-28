@@ -26,14 +26,9 @@ public class MonitorDeInstancias {
     }
 
     public void iniciarMonitoramento() {
-<<<<<<< Updated upstream
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(MonitorDeInstancias::verificarHeartbeats, 0, 20, TimeUnit.SECONDS);
-=======
         System.out.println("[Monitor] Iniciando Monitoramento:");
         verificarHeartbeats();
         System.out.println();
->>>>>>> Stashed changes
     }
 
     private static void verificarHeartbeats() {
@@ -51,18 +46,10 @@ public class MonitorDeInstancias {
                         System.out.println("[Monitor] Servidor voltou: " + servidor.getHost() + ":" + servidor.getPorta());
                     }
                     servidor.setAtivo(true);
-<<<<<<< Updated upstream
-                    //System.out.println("[Monitor] Servidor ativo: " + servidor.getHost() + ":" + servidor.getPorta());
-                } else {
-                    servidor.setAtivo(false);
-                    servidor.setLastPing(false);
-                    //System.out.println("[Monitor] Servidor inativo: " + servidor.getHost() + ":" + servidor.getPorta());
-=======
                 } else {
                     servidor.setAtivo(false);
                     servidor.setLastPing(false);
                     System.out.println("[Monitor] Servidor inativo (sem resposta correta): " + servidor.getHost() + ":" + servidor.getPorta());
->>>>>>> Stashed changes
                 }
 
                 if (!servidor.isLastPing() && servidor.isAtivo()) {
@@ -89,9 +76,7 @@ public class MonitorDeInstancias {
                 servidor.setAtivo(false);
                 servidor.setLastPing(false);
             }
-            System.out.println();
         }
-        System.out.println();
     }
 
     public static List<ListaDeServers> getServidorAtivo() {
