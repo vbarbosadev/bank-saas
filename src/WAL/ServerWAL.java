@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.StringTokenizer;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -18,6 +19,7 @@ public class ServerWAL {
     private static final String LOG_PATH03 = "log_bloco3.txt";
 
     public static void main(String[] args) throws IOException {
+
         int PORT = Integer.parseInt(args[0]);
         int BACKLOG = Integer.parseInt(args[1]);
 
@@ -30,28 +32,27 @@ public class ServerWAL {
         }
     }
 
-    public static String getBloco(String msg){
-        String bloco;
-        StringTokenizer tokenizer = new StringTokenizer(msg, ";");
-        bloco = tokenizer.nextToken();
-        return bloco;
-    }
 
     private static void saveLog(Socket socket) {
         try (socket) {
             var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             String msg = in.readLine();
-            String bloco = getBloco(msg);
-            String[] partes = msg.split(";", 2);
-            String restante = partes[1];
 
-            if (restante.equals("COMMIT")) {
+            String[] partes = msg.split(";", 2);
+            String request = partes[1];
+            String bloco = partes[0];
+
+            if(getComando(request).equals("saldo")){
+                return;
+            }
+
+            if (request.equals("COMMIT")) {
                 marcarComoCommit(bloco);
                 System.out.println("Log do bloco " + bloco + " marcado como COMMIT.");
                 return;
             }
 
-            String logLine = System.currentTimeMillis() + ";" + restante + ";PENDENTE" + System.lineSeparator();
+            String logLine = System.currentTimeMillis() + ";" + request + ";PENDENTE" + System.lineSeparator();
 
             switch (bloco){
                 case "1" -> Files.writeString(Path.of(LOG_PATH01), logLine, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
@@ -67,7 +68,10 @@ public class ServerWAL {
     }
 
     private static void marcarComoCommit(String bloco) throws IOException {
-        Path path = switch (bloco) {
+
+        System.err.println("Marcar como COMMIT entrou");
+
+        Path path = switch (bloco){
             case "1" -> Path.of(LOG_PATH01);
             case "2" -> Path.of(LOG_PATH02);
             case "3" -> Path.of(LOG_PATH03);
@@ -83,4 +87,10 @@ public class ServerWAL {
 
         Files.write(path, atualizadas);
     }
+
+    private static String getComando(String msg) {
+        String[] partes = msg.split(";", 2);
+        return partes[0];
+    }
+
 }

@@ -27,14 +27,20 @@ public class ApiGateway {
     }
 
     public static String validacaoResp(String resp) {
-        String[] partes = resp.split(" ", 2); // divide em 2 partes
-        String restante = partes[0];
+        String[] partes = resp.split(":", 2); // divide em 2 partes
+        String erro = partes[0];
         //System.out.println(restante); // saída: cmd;num;val
-        if(restante.equals("Erro")) {
+        if(erro.equals("Erro de transação")) {
             //System.out.println("ERROOOOOOOOOOOOOOOOOOOOR");
-            return resp;
+            System.out.println("resp: OK");
+            return "OK";
+        } else if (erro.equals("Erro")) {
+            System.err.println("resp: OK");
+            return erro;
         }
+        System.out.println("resp: OK");
         return "OK";
+
     }
 
 
@@ -58,14 +64,11 @@ public class ApiGateway {
 
                 response = validacaoResp(response);
 
-                System.out.println("Resp banco: " + response);
-
-
                 output.println(response);
                 output.flush();
                 output.close();
                 socket.close();
-                System.out.println("resp: " + response);
+
             }
 
 

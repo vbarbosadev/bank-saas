@@ -38,42 +38,42 @@ public class ProcessadorBancario {
                     return ("Conta >" + numConta + "< criada com sucesso!");
                 } else {
                     System.out.println("Erro ao criar conta!");
-                    return ("Erro número de conta " + numConta + "já existe.");
+                    return ("Erro de transação: Erro número de conta " + numConta + "já existe.");
                 }
             case "sacar":
                 numConta = Integer.parseInt(tokenizer.nextToken());
                 valor = Integer.parseInt(tokenizer.nextToken());
                 if (banco.sacar(numConta, valor)) {
-                    System.out.println("Saque realizado com sucesso!");
-                    return ("Novo saldo da conta >" + numConta + "< é de " + banco.getSaldoConta(numConta));
+                    //System.out.println("Saque realizado com sucesso!");
+                    return ("Novo saldo da conta >" + numConta + "< é de " + banco.getSaldo(numConta));
                 } else {
-                    System.out.println("Erro ao sacar!");
-                    if(banco.getSaldoConta(numConta) < valor){
-                        return ("Erro ao sacar, limite não disponível!");
+                    //System.out.println("Erro ao sacar!");
+                    if(banco.getSaldo(numConta) < valor){
+                        return ("Erro de transação: Erro ao sacar, limite não disponível!");
                     }
-                    return ("Erro ao sacar!");
+                    return ("Erro de transação: Erro ao sacar!");
                 }
             case "depositar":
                 numConta = Integer.parseInt(tokenizer.nextToken());
                 valor = Integer.parseInt(tokenizer.nextToken());
                 if (banco.depositar(numConta, valor)) {
-                    System.out.println("Depósito realizado com sucesso!");
-                    return ("Depósito realizado. Novo saldo da conta >" + numConta + "< é de " + banco.getSaldoConta(numConta));
+                    //System.out.println("Depósito realizado com sucesso!");
+                    return ("Depósito realizado. Novo saldo da conta >" + numConta + "< é de " + banco.getSaldo(numConta));
                 } else {
-                    System.out.println("Erro ao depositar!");
-                    return ("Erro ao depositar, conta" + numConta + " não existe");
+                    //System.out.println("Erro ao depositar!");
+                    return ("Erro de transação: Erro ao depositar, conta" + numConta + " não existe");
                 }
             case "saldo":
                 numConta = Integer.parseInt(tokenizer.nextToken());
-                if (banco.saldo(numConta) != -1) {
-                    System.out.println("Saldo da conta " + banco.getSaldoConta(numConta));
-                    return ("O saldo da conta é de " + banco.getSaldoConta(numConta));
+                if (banco.getSaldo(numConta) != -1) {
+                    System.out.println("Saldo da conta " + banco.getSaldo(numConta));
+                    return ("O saldo da conta é de " + banco.getSaldo(numConta));
                 } else {
-                    System.out.println("Erro ao consultar o saldo!");
-                    return ("Erro ao consultar o saldo");
+                    //System.out.println("Erro ao consultar o saldo!");
+                    return ("Erro de transação: Erro ao consultar o saldo");
                 }
             default:
-                return "Erro comando desconhecido! " + comando;
+                return "Erro de transação: Erro comando desconhecido! " + comando;
         }
     }
 }

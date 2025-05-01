@@ -1,4 +1,5 @@
 package serversSystem;
+
 import WAL.WALUtils;
 import objetos.Banco;
 import objetos.ProcessadorBancario;
@@ -6,101 +7,205 @@ import objetos.ProcessadorBancario;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ServerInstance {
 
-    public static int qtdClients = 0;
-    public static Banco banco = new Banco();
-    public static ProcessadorBancario process = new ProcessadorBancario(banco);
+
+
+    public static AtomicInteger qtdClients = new AtomicInteger(0);
+    public static final Banco banco = new Banco();
+    public static final ProcessadorBancario process = new ProcessadorBancario(banco);
+    public static final ReentrantReadWriteLock bancoLock = new ReentrantReadWriteLock(); // 🔐 Lock para sincronização
     public static int PORT = 0;
 
     public static void main(String[] args) {
-
+        long inicio = System.nanoTime();
+        getBanco();
+        banco.imprimirContas();
         PORT = Integer.parseInt(args[0]);
         int BACKLOG = Integer.parseInt(args[1]);
+        banco.setBloco(PORT % 10);
+        System.out.println("[BLOCO] " + banco.getBloco());
         System.out.println("Server Auxiliar iniciado na porta: " + PORT + " com BACKLOG: " + BACKLOG);
+        System.out.println();
 
-
-        // ✅ Thread agendada para enviar o banco a cada 2 minutos
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(() -> enviarBancoParaAuxiliar(), 0
-                , 60, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(() -> enviarBancoParaAuxiliar(), 30, 30, TimeUnit.SECONDS);
 
-        // 🔥 Virtual thread para cada requisição
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
              ServerSocket server = new ServerSocket(PORT, BACKLOG)) {
 
-
-
             while (true) {
                 Socket LeaderSocket = server.accept();
-                executor.execute(() -> handleClient(LeaderSocket, process));
-                qtdClients++;
+                executor.execute(() -> handleClient(LeaderSocket));
+                qtdClients.incrementAndGet();
+                System.out.println(qtdClients.get() + " clientes");
             }
 
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        long fim = System.nanoTime();
+        System.out.printf("Tempo total: %.3f ms%n", (fim - inicio) / 1_000_000.0);
     }
 
-    private static void handleClient(Socket LeaderSocket, ProcessadorBancario process) {
+    private static void handleClient(Socket LeaderSocket) {
         try (LeaderSocket;
              BufferedReader input = new BufferedReader(new InputStreamReader(LeaderSocket.getInputStream()));
              PrintWriter output = new PrintWriter(LeaderSocket.getOutputStream(), true)) {
-
 
             String msg = input.readLine();
             if ("PING".equals(msg)) {
                 output.println("PONG");
                 return;
             }
-            if("UPDATE".equals(msg)){
+            if ("COMMIT".equals(msg)) {
                 enviarBancoParaAuxiliar();
                 return;
             }
 
-            System.out.println("Operação recebida de " + LeaderSocket.getInetAddress() + ": " + msg);
+            System.out.println("[REQ] Operação recebida de " + LeaderSocket.getInetAddress() + ": " + msg);
+            String reply;
+            long inicioEspera = System.nanoTime(); // 🕒 Início da espera
+            //bancoLock.readLock().lock(); // 🔒 Acesso de leitura ao banco
+            long fimEspera = System.nanoTime(); // 🕒 Fim da espera
+            System.out.printf("[THREAD] Leitura aguardou %.3f ms%n", (fimEspera - inicioEspera) / 1_000_000.0);
+            reply = process.processar(msg);
+            try {
+                if(validacaoResp(reply)){
+                    try (Socket logSocket = new Socket("localhost", 9000)) {
+                        int bloco  = (banco.getBloco());
+                        var logOut = new PrintWriter(logSocket.getOutputStream(), true);
+                        logOut.println(bloco + ";" + msg);  // WAL antes da operação
 
+                        //System.out.println("Log enviado com sucesso para o bloco " + bloco + "!");
 
-            String reply = process.processar(msg);
+                    }
+                }
+
+            }   catch (IOException e){
+                System.err.println("Error envio para o WAL : " + e.getMessage());
+            }
+            finally {
+                //bancoLock.readLock().unlock();
+            }
+
             output.println(reply);
+
 
         } catch (IOException e) {
             System.err.println("Error handling client: " + e.getMessage());
         } finally {
-            qtdClients--;
+            qtdClients.decrementAndGet();
         }
     }
 
     // 🚀 Função que envia o objeto Banco para o servidor auxiliar
     private static void enviarBancoParaAuxiliar() {
-        try (Socket socket = new Socket("localhost", 8000); // Porta do servidor auxiliar
-             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-             ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
+        long inicioEspera = System.nanoTime(); // 🕒
+        bancoLock.writeLock().lock(); // 🔐
+        long fimEspera = System.nanoTime(); // 🕒
+        System.out.printf("\n[COMMIT] Escrita aguardou %.3f ms%n\n", (fimEspera - inicioEspera) / 1_000_000.0);
 
-            banco.imprimirContas();
-            out.writeObject(banco);
-            out.flush();
-            System.out.println("[LOG] Contato com o servidor auxiliar foi bem sucedido.");
+        try {
+            try (Socket socket = new Socket("localhost", 8000); // Porta do servidor auxiliar
+                 ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                 ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
+
+                // Enviar o objeto banco
+                out.writeObject(banco);
+                out.flush();
+                System.out.println("[LOG] Contato com o database foi bem sucedido.\n");
+                // Atualizar o banco com a resposta do servidor auxiliar
+                Banco bancoNovo = (Banco) in.readObject();
+                out.close();
+                in.close();
+                socket.close();
+                mesclarBancos(bancoNovo);
+                process.setBanco(banco);
+                Thread.sleep(100);
 
 
-            banco = (Banco) in.readObject();
-            banco.imprimirContas();
-            process.setBanco(banco);
+            } catch (IOException | ClassNotFoundException | InterruptedException e) {
+                System.err.println("[LOG] Falha ao enviar banco para o auxiliar: " + e.getMessage());
+            }
+        } finally {
+            bancoLock.writeLock().unlock();
 
-        } catch (IOException e) {
-            System.err.println("[LOG] Falha ao enviar banco para o auxiliar: " + e.getMessage());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+        }
+    }
+
+    private static void mesclarBancos(Banco recebido) {
+        HashMap<Integer, Object> contasRecebidas = recebido.getContas();
+
+        for (Map.Entry<Integer, Object> entry : contasRecebidas.entrySet()) {
+            Integer idConta = entry.getKey();
+            Map<String, Integer> dadosRecebidos = (Map<String, Integer>) entry.getValue();
+
+            Map<String, Integer> dadosAtuais = (Map<String, Integer>) banco.getContas().get(idConta);
+
+            if (dadosAtuais != null) {
+                String nome = dadosRecebidos.keySet().iterator().next();
+                Integer saldo = dadosRecebidos.get(nome);
+                dadosAtuais.put(nome, saldo);
+            } else {
+                banco.getContas().put(idConta, dadosRecebidos);
+            }
+        }
+    }
+
+    public static boolean validacaoResp(String resp) {
+        String[] partes = resp.split(":", 2); // divide em 2 partes
+        String erro = partes[0];
+        if(erro.equals("Erro de transação")) {
+            //System.out.println("ERROOOOOOOOOOOOOOOOOOOOR");
+
+            return false;
+        } else if (erro.equals("Erro")) {
+
+            return false;
+
         }
 
+        return true;
     }
+
+    private static void getBanco(){
+        long inicioEspera = System.nanoTime(); // 🕒
+        bancoLock.writeLock().lock(); // 🔐
+        long fimEspera = System.nanoTime(); // 🕒
+        System.out.printf("\n[INIT] Tempo para receber o banco foi de %.3f ms%n\n", (fimEspera - inicioEspera) / 1_000_000.0);
+
+        try {
+            try (Socket socket = new Socket("localhost", 8000); // Porta do servidor auxiliar
+                 ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                 ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
+
+                // Enviar o objeto banco
+                out.writeObject(banco);
+                out.flush();
+
+                Banco bancoNovo = (Banco) in.readObject();
+                out.close();
+                in.close();
+                socket.close();
+                mesclarBancos(bancoNovo);
+                process.setBanco(banco);
+                Thread.sleep(500);
+
+            } catch (IOException | ClassNotFoundException | InterruptedException e) {
+                System.err.println("[LOG] Falha ao enviar banco para o auxiliar: " + e.getMessage());
+            }
+        } finally {
+            bancoLock.writeLock().unlock();
+
+        }
+    }
+
 }
-
-
-
-

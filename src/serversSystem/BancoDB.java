@@ -1,5 +1,6 @@
 package serversSystem;
 
+import WAL.WALUtils;
 import objetos.Banco;
 
 import java.io.*;
@@ -11,10 +12,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 
 public class BancoDB {
 
     private static Banco bancoDB;
+    private static final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public static void main(String[] args) throws IOException {
         bancoDB = carregarBanco();
@@ -41,22 +45,28 @@ public class BancoDB {
         }
     }
 
-    public static int getPort(Socket socket){
-        int port = socket.getPort();
-        int lastDigit = port % 10;
-        return lastDigit;
-    }
+
 
     public static void start(Socket s) {
         try (s; ObjectInputStream in = new ObjectInputStream(s.getInputStream());
              ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream())) {
 
             Banco bancoRecebido = (Banco) in.readObject();
-            mesclarBancos(bancoRecebido);
-            salvarBanco(); // salva após mesclagem
+            lock.writeLock().lock();
+            try {
+                mesclarBancos(bancoRecebido);
+                salvarBanco();
+            } finally {
+                lock.writeLock().unlock();
+            }
+
+            if (bancoRecebido.getContas().size() > 0) {
+                System.out.println("Contas recebidas!");
+            }
             System.out.println("Banco mesclado e salvo com sucesso.");
 
-            int bloco = getPort(s);
+
+            int bloco = bancoRecebido.getBloco();
             String logPath = switch (bloco) {
                 case 1 -> "log_bloco1.txt";
                 case 2 -> "log_bloco2.txt";
@@ -64,7 +74,13 @@ public class BancoDB {
                 default -> null;
             };
 
-            System.out.println("iniciando checagem");
+            System.out.println("[BLOCO] " + bloco);
+            WALUtils.marcarTodosComoCommit(bloco);
+
+
+
+
+            System.out.println("[LOG] iniciando checagem");
 
             if (logPath != null) {
                 Path logFile = Path.of(logPath);
@@ -76,11 +92,14 @@ public class BancoDB {
 
                     if (pendentes.isEmpty()) {
                         Files.delete(logFile); // deleta se não restar mais nada
-                        System.out.println("Log totalmente processado e deletado.");
+                        System.out.println("[LOG] Log totalmente processado e deletado.");
                     } else {
                         Files.write(logFile, pendentes); // sobrescreve só com pendentes
-                        System.out.println("Log atualizado com apenas operações pendentes.");
+                        System.out.println("[LOG] Log atualizado com apenas operações pendentes.");
                     }
+                } else {
+                    System.out.println("[LOG] Arquivo nao encontrado.");
+
                 }
             }
 
@@ -88,7 +107,7 @@ public class BancoDB {
             out.flush();
 
         } catch (IOException | ClassNotFoundException e) {
-            System.err.println("Erro ao receber ou salvar dados do banco: " + e.getMessage());
+            System.err.println("[LOG] Erro ao receber ou salvar dados do banco: " + e.getMessage());
         }
     }
 
@@ -116,22 +135,22 @@ public class BancoDB {
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("bancoDB.dat"))) {
             out.writeObject(bancoDB);
         } catch (IOException e) {
-            System.err.println("Erro ao salvar banco em arquivo: " + e.getMessage());
+            System.err.println("[LOG] Erro ao salvar banco em arquivo: " + e.getMessage());
         }
     }
 
     private static Banco carregarBanco() {
         File arquivo = new File("bancoDB.dat");
         if (!arquivo.exists()) {
-            System.out.println("Nenhum banco salvo encontrado. Criando novo...");
+            System.out.println("[LOG] Nenhum banco salvo encontrado. Criando novo...");
             return new Banco();
         }
 
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(arquivo))) {
-            System.out.println("Banco carregado com sucesso a partir do arquivo.");
+            System.out.println("[LOG] Banco carregado com sucesso a partir do arquivo.");
             return (Banco) in.readObject();
         } catch (IOException | ClassNotFoundException e) {
-            System.err.println("Erro ao carregar banco salvo: " + e.getMessage());
+            System.err.println("[LOG] Erro ao carregar banco salvo: " + e.getMessage());
             return new Banco();
         }
     }
