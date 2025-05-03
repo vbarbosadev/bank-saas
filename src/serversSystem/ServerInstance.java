@@ -73,7 +73,7 @@ public class ServerInstance {
             System.out.println("[REQ] Operação recebida de " + LeaderSocket.getInetAddress() + ": " + msg);
             String reply;
             long inicioEspera = System.nanoTime(); // 🕒 Início da espera
-            //bancoLock.readLock().lock(); // 🔒 Acesso de leitura ao banco
+            bancoLock.readLock().lock(); // 🔒 Acesso de leitura ao banco
             long fimEspera = System.nanoTime(); // 🕒 Fim da espera
             System.out.printf("[THREAD] Leitura aguardou %.3f ms%n", (fimEspera - inicioEspera) / 1_000_000.0);
             reply = process.processar(msg);
@@ -93,7 +93,7 @@ public class ServerInstance {
                 System.err.println("Error envio para o WAL : " + e.getMessage());
             }
             finally {
-                //bancoLock.readLock().unlock();
+                bancoLock.readLock().unlock();
             }
 
             output.println(reply);
@@ -187,7 +187,7 @@ public class ServerInstance {
                  ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
                  ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
 
-                // Enviar o objeto banco
+
                 out.writeObject(banco);
                 out.flush();
 
