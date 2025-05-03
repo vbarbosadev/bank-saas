@@ -108,8 +108,6 @@ public class ServerInstance {
 
             sendResponse(reply, clientAddress, clientPort, serverSocket);
 
-        } catch (Exception e) {
-            System.err.println("Error handling client: " + e.getMessage());
         } finally {
             qtdClients.decrementAndGet();
         }
@@ -159,7 +157,7 @@ public class ServerInstance {
             // Espera resposta
             byte[] buffer = new byte[65535];
             DatagramPacket response = new DatagramPacket(buffer, buffer.length);
-            socket.setSoTimeout(3000);
+            //socket.setSoTimeout(3000);
             socket.receive(response);
 
             // Desserializa resposta
@@ -237,7 +235,7 @@ public class ServerInstance {
             // Espera resposta
             byte[] buffer = new byte[65535];
             DatagramPacket response = new DatagramPacket(buffer, buffer.length);
-            socket.setSoTimeout(3000);
+           // socket.setSoTimeout(5000);
             socket.receive(response);
 
             // Desserializa resposta

@@ -48,7 +48,7 @@ public class MonitorDeInstancias {
                     System.out.println("[Monitor] Enviando PING para " + servidor.getHost() + ":" + servidor.getPorta());
 
                     socket.send(sendPacket);
-                    socket.setSoTimeout(3000); // timeout de 3 segundos
+                   //socket.setSoTimeout(5000); // timeout de 3 segundos
 
                     // Recebendo a resposta
                     byte[] receiveData = new byte[65535];

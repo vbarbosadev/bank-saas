@@ -75,7 +75,7 @@ public class ServerBanco implements Serializable {
                 // Espera resposta
                 byte[] receiveBuffer = new byte[1024];
                 DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
-                auxSocket.setSoTimeout(3000); // timeout opcional
+                //auxSocket.setSoTimeout(10000); // timeout opcional
                 auxSocket.receive(receivePacket);
 
                 resp = new String(receivePacket.getData(), 0, receivePacket.getLength());

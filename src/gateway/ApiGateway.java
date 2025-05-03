@@ -75,7 +75,7 @@ public class ApiGateway {
             // Receber resposta do servidor principal
             byte[] responseBuffer = new byte[1024];
             DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
-            socket.setSoTimeout(2000); // timeout de 2 segundos
+            //socket.setSoTimeout(10000); // timeout de 2 segundos
             socket.receive(responsePacket);
 
             return new String(responsePacket.getData(), 0, responsePacket.getLength(), StandardCharsets.UTF_8);
