@@ -1,12 +1,13 @@
 package serversSystem;
 
 import WAL.ReplayerDeLog;
-
+import java.io.*;
 import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MonitorDeInstancias {
+
     private static List<ListaDeServers> auxiliares;
 
     public MonitorDeInstancias() {
@@ -25,46 +26,89 @@ public class MonitorDeInstancias {
     }
 
     public void iniciarMonitoramento() {
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(MonitorDeInstancias::verificarHeartbeats, 0, 20, TimeUnit.SECONDS);
+        System.out.println("[Monitor] Iniciando Monitoramento:");
+        verificarHeartbeats();
+        System.out.println();
     }
 
     private static void verificarHeartbeats() {
-        for (ListaDeServers servidor : auxiliares) {
-            try (DatagramSocket socket = new DatagramSocket()) {
-                socket.setSoTimeout(3000); // 3 segundos de timeout
+        DatagramSocket socket = null;
 
-                byte[] sendData = "PING".getBytes();
-                InetAddress ip = InetAddress.getByName(servidor.getHost());
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, ip, servidor.getPorta());
-                socket.send(sendPacket);
+        try {
+            socket = new DatagramSocket();
 
-                byte[] receiveBuffer = new byte[1024];
-                DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+            for (ListaDeServers servidor : auxiliares) {
+                try {
+                    InetAddress serverAddress = InetAddress.getByName(servidor.getHost());
+                    String msg = "PING";
+                    byte[] sendData = msg.getBytes();
+                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, servidor.getPorta());
 
-                socket.receive(receivePacket);
-                String resposta = new String(receivePacket.getData(), 0, receivePacket.getLength()).trim();
+                    // Log para verificar se o pacote de ping está sendo enviado
+                    System.out.println("[Monitor] Enviando PING para " + servidor.getHost() + ":" + servidor.getPorta());
 
-                if ("PONG".equals(resposta)) {
-                    servidor.setAtivo(true);
-                } else {
-                    servidor.setAtivo(false);
-                    servidor.setLastPing(false);
+                    socket.send(sendPacket);
+                    socket.setSoTimeout(3000); // timeout de 3 segundos
+
+                    // Recebendo a resposta
+                    byte[] receiveData = new byte[65535];
+                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+                    // Adicionando tratamento para o timeout
+                    try {
+                        socket.receive(receivePacket);
+                        System.out.println("[Monitor] Resposta recebida de " + servidor.getHost() + ":" + servidor.getPorta());
+                    } catch (SocketTimeoutException e) {
+                        // Se o servidor não responder dentro do tempo limite
+                        System.out.println("[Monitor] Timeout ao aguardar resposta do servidor: " + servidor.getHost() + ":" + servidor.getPorta());
+                        servidor.setAtivo(false);
+                        servidor.setLastPing(false);
+                        return; // Sai da execução se o servidor não responder
+                    }
+
+                    String resposta = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                    System.out.println("[Monitor] Resposta do servidor: " + resposta);
+
+                    if ("PONG".equals(resposta)) {
+                        if (!servidor.isAtivo()) {
+                            System.out.println("[Monitor] Servidor voltou: " + servidor.getHost() + ":" + servidor.getPorta());
+                        }
+                        servidor.setAtivo(true);
+                    } else {
+                        servidor.setAtivo(false);
+                        servidor.setLastPing(false);
+                        System.out.println("[Monitor] Servidor inativo (sem resposta correta): " + servidor.getHost() + ":" + servidor.getPorta());
+                    }
+
+                    if (!servidor.isLastPing() && servidor.isAtivo()) {
+                        servidor.setLastPing(true);
+
+                        // Pausa envios enquanto recupera
+                        ServerBanco.pausarEnviosPara(servidor.getPorta());
+
+                        try {
+                            System.err.println("[Monitor] Recuperando logs para porta: " + servidor.getPorta());
+                            ReplayerDeLog.reproduzir(servidor.getPorta(), servidor.getBloco());
+                        } catch (Exception e) {
+                            System.err.println("[Monitor] Erro ao replicar log para porta " + servidor.getPorta() + ": " + e.getMessage());
+                        } finally {
+                            // Libera envios após recuperar
+                            ServerBanco.liberarEnviosPara(servidor.getPorta());
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("[Monitor] Erro geral ao tentar enviar ping: " + e.getMessage());
                 }
 
-                if (!servidor.isLastPing() && servidor.isAtivo()) {
-                    servidor.setLastPing(true);
-                    System.out.println("[Monitor] Reexecutando log para servidor " + servidor.getPorta());
-                    ReplayerDeLog.reproduzir(servidor.getPorta(), servidor.getBloco());
-                }
+            }
 
-            } catch (Exception e) {
-                servidor.setAtivo(false);
-                servidor.setLastPing(false);
-                System.out.println("[Monitor] Falha no servidor: " + servidor.getHost() + ":" + servidor.getPorta());
+        } catch (SocketException e) {
+            e.printStackTrace();
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
             }
         }
-        System.out.println();
     }
 
     public static List<ListaDeServers> getServidorAtivo() {

@@ -11,61 +11,78 @@ public class ApiGateway {
         System.out.println("API GATEWAY (UDP)");
 
         int PORT = Integer.parseInt(args[0]);
-        DatagramSocket gatewaySocket = new DatagramSocket(PORT);
+        DatagramSocket serverSocket = new DatagramSocket(PORT);
+
         var executor = Executors.newVirtualThreadPerTaskExecutor();
 
-        while (true) {
-            byte[] buffer = new byte[1024];
-            DatagramPacket requestPacket = new DatagramPacket(buffer, buffer.length);
-            gatewaySocket.receive(requestPacket);
+        byte[] receiveBuffer = new byte[1024];
 
-            executor.submit(() -> handleClient(requestPacket, gatewaySocket));
+        while (true) {
+            DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+            serverSocket.receive(receivePacket);
+
+            executor.submit(() -> handleClient(receivePacket, serverSocket));
+        }
+    }
+
+    private static void handleClient(DatagramPacket packet, DatagramSocket serverSocket) {
+        try {
+            String request = new String(packet.getData(), 0, packet.getLength(), StandardCharsets.UTF_8);
+            InetAddress clientAddress = packet.getAddress();
+            int clientPort = packet.getPort();
+
+            System.out.println("Recebido: " + request);
+
+            // Encaminhar para o servidor principal (também precisa ser UDP nesse caso)
+            String response = forwardToMainServer(request);
+
+            response = validacaoResp(response);
+
+            // Enviar resposta (como um ACK) para o cliente UDP
+            byte[] sendBuffer = response.getBytes(StandardCharsets.UTF_8);
+            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, clientAddress, clientPort);
+            serverSocket.send(sendPacket);
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
     public static String validacaoResp(String resp) {
-        String[] partes = resp.split(" ", 2); // divide em 2 partes
-        String restante = partes[0];
-        if (restante.equals("Erro")) {
-            return resp;
+        String[] partes = resp.split(":", 2);
+        String erro = partes[0];
+
+        if (erro.equals("Erro de transação")) {
+            System.out.println("resp: OK");
+            return "OK";
+        } else if (erro.equals("Erro")) {
+            System.err.println("resp: OK");
+            return erro;
         }
+
+        System.out.println("resp: OK");
         return "OK";
     }
 
-    private static void handleClient(DatagramPacket clientPacket, DatagramSocket gatewaySocket) {
-        try {
-            String request = new String(clientPacket.getData(), 0, clientPacket.getLength(), StandardCharsets.UTF_8);
-            System.out.println("request: " + request);
-
-            // Enviar para o servidor principal via UDP
-            DatagramSocket serverSocket = new DatagramSocket();
-            byte[] sendData = request.getBytes(StandardCharsets.UTF_8);
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,
-                    InetAddress.getByName("localhost"), 6000);
-            serverSocket.send(sendPacket);
+    private static String forwardToMainServer(String request) {
+        // envia via UDP para o servidor principal (localhost:6000)
+        try (DatagramSocket socket = new DatagramSocket()) {
+            byte[] buffer = request.getBytes(StandardCharsets.UTF_8);
+            InetAddress address = InetAddress.getByName("localhost");
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 6000);
+            socket.send(packet);
 
             // Receber resposta do servidor principal
-            byte[] receiveBuffer = new byte[1024];
-            DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
-            serverSocket.receive(receivePacket);
-            String response = new String(receivePacket.getData(), 0, receivePacket.getLength(), StandardCharsets.UTF_8);
+            byte[] responseBuffer = new byte[1024];
+            DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
+            socket.setSoTimeout(2000); // timeout de 2 segundos
+            socket.receive(responsePacket);
 
-            response = validacaoResp(response);
-            System.out.println("resp: " + response);
+            return new String(responsePacket.getData(), 0, responsePacket.getLength(), StandardCharsets.UTF_8);
 
-            // Enviar resposta de volta ao cliente (JMeter)
-            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            DatagramPacket responsePacket = new DatagramPacket(
-                    responseBytes,
-                    responseBytes.length,
-                    clientPacket.getAddress(),
-                    clientPacket.getPort()
-            );
-            gatewaySocket.send(responsePacket);
-
-            serverSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
+            return "Erro: falha na comunicação com servidor principal";
         }
     }
 }

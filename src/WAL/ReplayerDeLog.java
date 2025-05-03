@@ -1,6 +1,6 @@
 package WAL;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,7 +31,10 @@ public class ReplayerDeLog {
         }
 
         int i = 0;
+        DatagramSocket socket = null;
         try {
+            socket = new DatagramSocket();
+
             List<String> linhas = Files.readAllLines(path);
             for (String linha : linhas) {
                 String[] partes = linha.split(";");
@@ -45,44 +48,43 @@ public class ReplayerDeLog {
                 String valor = partes[3];
 
                 String msg = comando + ";" + conta + ";" + valor;
-                enviarRequestUDP(msg);
+                enviarRequest(socket, msg);
                 i++;
             }
 
-            enviarRequestUDP("UPDATE");
-            System.out.println("Reexecução do log do bloco " + bloco + " concluída.");
-            WALUtils.marcarTodosComoCommit(bloco);
+            System.err.println("Reexecução do log do bloco " + bloco + " concluída.");
+            WALUtils.marcarTodosComoCommit((bloco));
+
+            enviarRequest(socket, "COMMIT");
 
         } catch (IOException e) {
             System.err.println("Erro ao ler log: " + e.getMessage());
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
         }
     }
 
-    private static void enviarRequestUDP(String msg) {
-        try (DatagramSocket socket = new DatagramSocket()) {
-            InetAddress address = InetAddress.getByName("localhost");
-
-            // Enviar mensagem
+    private static void enviarRequest(DatagramSocket socket, String msg) {
+        try {
+            InetAddress serverAddress = InetAddress.getByName("localhost");
             byte[] sendData = msg.getBytes();
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, portaServidor);
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, portaServidor);
+
             socket.send(sendPacket);
+            System.out.println("Reenviado: " + msg);
 
-            // Aguardar resposta
-            byte[] receiveData = new byte[1024];
-            DatagramPacket responsePacket = new DatagramPacket(receiveData, receiveData.length);
-            socket.setSoTimeout(2000); // timeout opcional de 2s para evitar travas
+            // Espera pela resposta
+            byte[] receiveData = new byte[65535];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            socket.receive(receivePacket);
 
-            try {
-                socket.receive(responsePacket);
-                String resposta = new String(responsePacket.getData(), 0, responsePacket.getLength());
-                System.out.println("Reenviado: " + msg);
-                System.out.println("Resposta: " + resposta);
-            } catch (SocketTimeoutException e) {
-                System.out.println("Timeout ao esperar resposta para: " + msg);
-            }
+            String resposta = new String(receivePacket.getData(), 0, receivePacket.getLength());
+            System.out.println("Resposta: " + resposta);
 
         } catch (IOException e) {
-            System.err.println("Erro ao reenviar operação via UDP: " + e.getMessage());
+            System.err.println("Erro ao reenviar operação para servidor na porta " + portaServidor + ": " + e.getMessage());
         }
     }
 

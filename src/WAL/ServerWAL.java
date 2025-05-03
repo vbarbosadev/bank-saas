@@ -1,9 +1,7 @@
 package WAL;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -18,56 +16,71 @@ public class ServerWAL {
     private static final String LOG_PATH03 = "log_bloco3.txt";
 
     public static void main(String[] args) throws IOException {
+
         int PORT = Integer.parseInt(args[0]);
-        DatagramSocket socket = new DatagramSocket(PORT);
+
+        var serverSocket = new DatagramSocket(PORT);
         var executor = Executors.newVirtualThreadPerTaskExecutor();
 
-        System.out.println("[WAL] Servidor WAL iniciado na porta " + PORT + " (UDP)");
+        byte[] receiveData = new byte[65535];
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 
         while (true) {
-            byte[] buffer = new byte[1024];
-            DatagramPacket requestPacket = new DatagramPacket(buffer, buffer.length);
-            socket.receive(requestPacket);
-
-            executor.submit(() -> saveLog(socket, requestPacket));
+            serverSocket.receive(receivePacket);
+            executor.submit(() -> saveLog(receivePacket, serverSocket));
         }
     }
 
-    public static String getBloco(String msg) {
-        StringTokenizer tokenizer = new StringTokenizer(msg, ";");
-        return tokenizer.nextToken();
-    }
-
-    private static void saveLog(DatagramSocket socket, DatagramPacket packet) {
+    private static void saveLog(DatagramPacket receivePacket, DatagramSocket serverSocket) {
         try {
-            String msg = new String(packet.getData(), 0, packet.getLength());
-            String bloco = getBloco(msg);
+            String msg = new String(receivePacket.getData(), 0, receivePacket.getLength());
             String[] partes = msg.split(";", 2);
-            String restante = partes[1];
+            String request = partes[1];
+            String bloco = partes[0];
 
-            if (restante.equals("COMMIT")) {
+            if(getComando(request).equals("saldo")){
+                return;
+            }
+
+            if (request.equals("COMMIT")) {
                 marcarComoCommit(bloco);
                 System.out.println("Log do bloco " + bloco + " marcado como COMMIT.");
                 return;
             }
 
-            String logLine = System.currentTimeMillis() + ";" + restante + ";PENDENTE" + System.lineSeparator();
+            String logLine = System.currentTimeMillis() + ";" + request + ";PENDENTE" + System.lineSeparator();
 
-            switch (bloco) {
+            switch (bloco){
                 case "1" -> Files.writeString(Path.of(LOG_PATH01), logLine, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
                 case "2" -> Files.writeString(Path.of(LOG_PATH02), logLine, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
                 case "3" -> Files.writeString(Path.of(LOG_PATH03), logLine, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
             }
 
-            System.out.println("Log salvo no bloco " + bloco + ": " + logLine.trim());
+            System.out.println("Log salvo no bloco " + bloco + ": " + logLine);
+
+            // Envia resposta para o cliente
+            sendResponse("Log salvo no bloco " + bloco, receivePacket.getAddress(), receivePacket.getPort(), serverSocket);
 
         } catch (IOException e) {
-            System.err.println("Erro ao salvar log: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private static void sendResponse(String response, InetAddress clientAddress, int clientPort, DatagramSocket serverSocket) {
+        try {
+            byte[] responseData = response.getBytes();
+            DatagramPacket sendPacket = new DatagramPacket(responseData, responseData.length, clientAddress, clientPort);
+            serverSocket.send(sendPacket);
+        } catch (IOException e) {
+            System.err.println("Error sending response: " + e.getMessage());
         }
     }
 
     private static void marcarComoCommit(String bloco) throws IOException {
-        Path path = switch (bloco) {
+
+        System.err.println("Marcar como COMMIT entrou");
+
+        Path path = switch (bloco){
             case "1" -> Path.of(LOG_PATH01);
             case "2" -> Path.of(LOG_PATH02);
             case "3" -> Path.of(LOG_PATH03);
@@ -82,5 +95,10 @@ public class ServerWAL {
                 .collect(Collectors.toList());
 
         Files.write(path, atualizadas);
+    }
+
+    private static String getComando(String msg) {
+        String[] partes = msg.split(";", 2);
+        return partes[0];
     }
 }
