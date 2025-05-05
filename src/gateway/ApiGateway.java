@@ -56,7 +56,7 @@ public class ApiGateway {
             System.out.println("resp: OK");
             return "OK";
         } else if (erro.equals("Erro")) {
-            System.err.println("resp: OK");
+            System.err.println("resp: Erro");
             return erro;
         }
 

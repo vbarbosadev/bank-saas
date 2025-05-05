@@ -19,6 +19,7 @@ public class ServerInstance {
     public static final ProcessadorBancario process = new ProcessadorBancario(banco);
     public static final ReentrantReadWriteLock bancoLock = new ReentrantReadWriteLock(); // 🔐 Lock para sincronização
     public static int PORT = 0;
+    public static boolean replayer = false;
 
     public static void main(String[] args) {
 
@@ -75,20 +76,27 @@ public class ServerInstance {
             if ("COMMIT".equals(msg)) {
                 enviarBancoParaAuxiliar();
                 sendResponse("COMMIT RECEIVED", clientAddress, clientPort, serverSocket);
+                replayer = false;
+                return;
+            }
+
+            if ("ReplayerLog".equals(msg)){
+                sendResponse("REPLAYER RECEIVED", clientAddress, clientPort, serverSocket);
+                replayer = true;
                 return;
             }
 
             System.out.println("[REQ] Operação recebida de " + clientAddress + ": " + msg);
             String reply = new String();
             long inicioEspera = System.nanoTime(); // 🕒 Início da espera
-            bancoLock.readLock().lock(); // 🔒 Acesso de leitura ao banco
+            //bancoLock.readLock().lock(); // 🔒 Acesso de leitura ao banco
             long fimEspera = System.nanoTime(); // 🕒 Fim da espera
             System.out.printf("[THREAD] Leitura aguardou %.3f ms%n", (fimEspera - inicioEspera) / 1_000_000.0);
 
             try {
-                if (validacaoResp(reply)) {
-                    reply = process.processar(msg);
+                reply = process.processar(msg);
 
+                if (validacaoResp(reply) && !replayer) {
                     try (DatagramSocket logSocket = new DatagramSocket()) {
                         int bloco = banco.getBloco();
                         String logMessage = bloco + ";" + msg;
@@ -103,7 +111,7 @@ public class ServerInstance {
             } catch (IOException e) {
                 System.err.println("Error envio para o WAL: " + e.getMessage());
             } finally {
-                bancoLock.readLock().unlock();
+                //bancoLock.readLock().unlock();
             }
 
             sendResponse(reply, clientAddress, clientPort, serverSocket);
@@ -123,20 +131,9 @@ public class ServerInstance {
         }
     }
 
-
-    private static void sendUdpResponse(String message, InetAddress address, int port, DatagramSocket socket) {
-        try {
-            byte[] data = message.getBytes();
-            DatagramPacket responsePacket = new DatagramPacket(data, data.length, address, port);
-            socket.send(responsePacket);
-        } catch (IOException e) {
-            System.err.println("Erro ao enviar resposta UDP: " + e.getMessage());
-        }
-    }
-
     private static void enviarBancoParaAuxiliar() {
         long inicioEspera = System.nanoTime();
-        bancoLock.writeLock().lock();
+        //bancoLock.writeLock().lock();
         long fimEspera = System.nanoTime();
         System.out.printf("\n[COMMIT] Escrita aguardou %.3f ms%n\n", (fimEspera - inicioEspera) / 1_000_000.0);
 
@@ -172,7 +169,7 @@ public class ServerInstance {
         } catch (IOException | ClassNotFoundException | InterruptedException e) {
             System.err.println("[UDP] Erro na comunicação com o auxiliar: " + e.getMessage());
         } finally {
-            bancoLock.writeLock().unlock();
+            //bancoLock.writeLock().unlock();
         }
     }
 

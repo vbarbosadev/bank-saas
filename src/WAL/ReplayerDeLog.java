@@ -36,6 +36,8 @@ public class ReplayerDeLog {
             socket = new DatagramSocket();
 
             List<String> linhas = Files.readAllLines(path);
+            enviarRequest(socket, "ReplayerLog");
+
             for (String linha : linhas) {
                 String[] partes = linha.split(";");
                 if (partes.length < 5) continue;

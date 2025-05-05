@@ -44,15 +44,15 @@ public class BancoDB {
             Banco bancoRecebido = (Banco) in.readObject();
             in.close();
 
-            lock.writeLock().lock();
+            //lock.writeLock().lock();
             try {
                 mesclarBancos(bancoRecebido);
                 salvarBanco();
             } finally {
-                lock.writeLock().unlock();
+               // lock.writeLock().unlock();
             }
 
-            if (bancoRecebido.getContas().size() > 0) {
+            if (!bancoRecebido.getContas().isEmpty()) {
                 System.out.println("Contas recebidas!");
             }
             System.out.println("Banco mesclado e salvo com sucesso.");
