@@ -5,6 +5,8 @@
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
     </TestPlan>
     <hashTree>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Criar Contas" enabled="true">
@@ -19,7 +21,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="CSV Data Set Config">
+        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="CSV Data Set Config" enabled="true">
           <stringProp name="filename">C:/Users/Suporte/Documents/vinicius/Programação Distribuída/bank-saas/jMeter/contas - criarContas.csv</stringProp>
           <stringProp name="fileEncoding">UTF-8</stringProp>
           <stringProp name="variableNames"></stringProp>
@@ -31,7 +33,7 @@
           <boolProp name="ignoreFirstLine">false</boolProp>
         </CSVDataSet>
         <hashTree/>
-        <TCPSampler guiclass="TCPSamplerGui" testclass="TCPSampler" testname="Envio TCP">
+        <TCPSampler guiclass="TCPSamplerGui" testclass="TCPSampler" testname="Envio TCP" enabled="true">
           <stringProp name="TCPSampler.server">localhost</stringProp>
           <boolProp name="TCPSampler.reUseConnection">true</boolProp>
           <stringProp name="TCPSampler.port">5000</stringProp>
@@ -55,7 +57,7 @@
           </ResponseAssertion>
           <hashTree/>
         </hashTree>
-        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="Ver Árvore de Resultados">
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="Ver Árvore de Resultados" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -137,7 +139,7 @@
           <boolProp name="exclude_checkbox_state">false</boolProp>
         </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
         <hashTree/>
-        <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.TransactionsPerSecondGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="Throughput">
+        <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.TransactionsPerSecondGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="Throughput" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -182,7 +184,7 @@
           <boolProp name="exclude_checkbox_state">false</boolProp>
         </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
         <hashTree/>
-        <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.ResponseTimesOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="Response time">
+        <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.ResponseTimesOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="Response time" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -227,7 +229,7 @@
           <boolProp name="exclude_checkbox_state">false</boolProp>
         </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
         <hashTree/>
-        <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Relatório de Sumário">
+        <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Relatório de Sumário" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -264,7 +266,7 @@
           <stringProp name="filename"></stringProp>
         </ResultCollector>
         <hashTree/>
-        <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Relatório Agregado">
+        <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Relatório Agregado" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -302,9 +304,9 @@
         </ResultCollector>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Manipular Contas" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Manipular Contas">
         <boolProp name="ThreadGroup.delayedStart">true</boolProp>
-        <intProp name="ThreadGroup.num_threads">100</intProp>
+        <intProp name="ThreadGroup.num_threads">5</intProp>
         <intProp name="ThreadGroup.ramp_time">5</intProp>
         <longProp name="ThreadGroup.duration">60</longProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -328,7 +330,7 @@
           <boolProp name="ignoreFirstLine">false</boolProp>
         </CSVDataSet>
         <hashTree/>
-        <TCPSampler guiclass="TCPSamplerGui" testclass="TCPSampler" testname="Envio TCP">
+        <TCPSampler guiclass="TCPSamplerGui" testclass="TCPSampler" testname="Envio TCP" enabled="false">
           <stringProp name="TCPSampler.server">localhost</stringProp>
           <boolProp name="TCPSampler.reUseConnection">true</boolProp>
           <stringProp name="TCPSampler.port">5000</stringProp>
@@ -341,7 +343,7 @@
           <stringProp name="ConfigTestElement.password"></stringProp>
         </TCPSampler>
         <hashTree>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Asserções de Resposta">
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Asserções de Resposta" enabled="true">
             <collectionProp name="Asserion.test_strings">
               <stringProp name="2524">OK</stringProp>
             </collectionProp>
@@ -434,7 +436,7 @@
           <boolProp name="exclude_checkbox_state">false</boolProp>
         </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
         <hashTree/>
-        <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.ResponseTimesOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="Response time">
+        <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.ResponseTimesOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="Response time" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -479,7 +481,7 @@
           <boolProp name="exclude_checkbox_state">false</boolProp>
         </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
         <hashTree/>
-        <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.TransactionsPerSecondGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="Throughput">
+        <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.TransactionsPerSecondGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="Throughput" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -524,7 +526,7 @@
           <boolProp name="exclude_checkbox_state">false</boolProp>
         </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
         <hashTree/>
-        <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Relatório de Sumário">
+        <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Relatório de Sumário" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -598,14 +600,44 @@
           <stringProp name="filename"></stringProp>
         </ResultCollector>
         <hashTree/>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Requisição HTTP">
+          <stringProp name="HTTPSampler.domain">localhost</stringProp>
+          <stringProp name="HTTPSampler.port">5000</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">${comando}&#xd;
+</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Asserções de Resposta">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="2524">OK</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message"></stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">16</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
       </hashTree>
-      <OpenModelThreadGroup guiclass="OpenModelThreadGroupGui" testclass="OpenModelThreadGroup" testname="Open Model Thread Group">
+      <OpenModelThreadGroup guiclass="OpenModelThreadGroupGui" testclass="OpenModelThreadGroup" testname="Open Model Thread Group" enabled="false">
         <stringProp name="OpenModelThreadGroup.schedule">rate(1/min)</stringProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="OpenModelThreadGroupController"/>
       </OpenModelThreadGroup>
       <hashTree>
-        <TCPSampler guiclass="TCPSamplerGui" testclass="TCPSampler" testname="Envio TCP">
+        <TCPSampler guiclass="TCPSamplerGui" testclass="TCPSampler" testname="Envio TCP" enabled="true">
           <stringProp name="TCPSampler.server">localhost</stringProp>
           <boolProp name="TCPSampler.reUseConnection">true</boolProp>
           <stringProp name="TCPSampler.port">5000</stringProp>

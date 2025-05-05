@@ -52,7 +52,18 @@ public class ServerBanco implements Serializable {
              BufferedReader request = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter response = new PrintWriter(socket.getOutputStream(), true)) {
 
-            String msg = request.readLine();
+            // Lê a linha de requisição HTTP: "GET /comando;conta;valor HTTP/1.0"
+            String requestLine = request.readLine();
+            if (requestLine == null || !requestLine.startsWith("GET")) {
+                response.println("HTTP/1.0 400 Bad Request");
+                response.println();
+                return;
+            }
+
+            String msg = requestLine.split(" ")[1].substring(1); // remove o '/'
+            // descarta cabeçalhos restantes
+            while (request.ready()) request.readLine();
+
             StringTokenizer tokenizer = new StringTokenizer(msg, ";");
             tokenizer.nextToken();
             int accNum = Integer.parseInt(tokenizer.nextToken());
@@ -79,7 +90,8 @@ public class ServerBanco implements Serializable {
             }
 
             if (!servidorAtivo) {
-                response.println("Erro: Servidor indisponível na porta " + portaDestino);
+                String errMsg = "Erro: Servidor indisponível na porta " + portaDestino;
+                enviarRespostaHttp(response, errMsg);
                 System.out.println("Servidor inativo na porta " + portaDestino + ", operação não realizada.");
                 return;
             }
@@ -94,11 +106,12 @@ public class ServerBanco implements Serializable {
                 auxOut.println(msg);
                 String respBanco = auxIn.readLine();
 
-                response.println(respBanco);
+                enviarRespostaHttp(response, respBanco);
+
             } catch (IOException e) {
                 e.printStackTrace();
                 System.out.println("Falha ao conectar ao servidor na porta " + portaDestino);
-                response.println("Erro: Falha ao conectar ao servidor");
+                enviarRespostaHttp(response, "Erro: Falha ao conectar ao servidor");
             }
 
         } catch (IOException e) {
@@ -106,6 +119,14 @@ public class ServerBanco implements Serializable {
         } finally {
             qtdClients.decrementAndGet();
         }
+    }
+
+    private static void enviarRespostaHttp(PrintWriter response, String body) {
+        response.println("HTTP/1.0 200 OK");
+        response.println("Content-Type: text/plain");
+        response.println("Content-Length: " + body.length());
+        response.println();
+        response.println(body);
     }
 
     private static void monitoramento() {

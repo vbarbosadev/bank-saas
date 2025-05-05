@@ -4,15 +4,12 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Executors;
 
 public class ApiGateway {
 
-
     public static void main(String[] args) throws IOException {
-        System.out.println("API GATEWAY");
+        System.out.println("API GATEWAY HTTP/1.0");
 
         int PORT = Integer.parseInt(args[0]);
         int BACKLOG = Integer.parseInt(args[1]);
@@ -27,11 +24,9 @@ public class ApiGateway {
     }
 
     public static String validacaoResp(String resp) {
-        String[] partes = resp.split(":", 2); // divide em 2 partes
+        String[] partes = resp.split(":", 2);
         String erro = partes[0];
-        //System.out.println(restante); // saída: cmd;num;val
-        if(erro.equals("Erro de transação")) {
-            //System.out.println("ERROOOOOOOOOOOOOOOOOOOOR");
+        if (erro.equals("Erro de transação")) {
             System.out.println("resp: OK");
             return "OK";
         } else if (erro.equals("Erro")) {
@@ -40,41 +35,60 @@ public class ApiGateway {
         }
         System.out.println("resp: OK");
         return "OK";
-
     }
-
 
     private static void handleClient(Socket socket) {
         try (socket;
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter output = new PrintWriter(socket.getOutputStream(), true)) {
+             OutputStream out = socket.getOutputStream()) {
 
-            String request = in.readLine();
+            // Lê a primeira linha da requisição HTTP
+            String requestLine = in.readLine();
+            if (requestLine == null || !requestLine.startsWith("GET")) {
+                sendHttpResponse(out, "400 Bad Request", "Formato de requisição inválido");
+                return;
+            }
 
+            System.out.println("Requisição recebida: " + requestLine);
 
+            // Extrai o caminho da requisição
+            String[] parts = requestLine.split(" ");
+            if (parts.length < 2) {
+                sendHttpResponse(out, "400 Bad Request", "Requisição malformada");
+                return;
+            }
 
-            // Encaminhar para o servidor principal
+            String comando = parts[1].substring(1); // remove a barra inicial
+
+            System.out.println("Comando recebido: " + comando);
+
+            // Encaminha comando para o servidor backend (TCP como antes)
             try (Socket server = new Socket("localhost", 6000);
                  BufferedReader serverIn = new BufferedReader(new InputStreamReader(server.getInputStream()));
-                 PrintWriter serverOut = new PrintWriter(server.getOutputStream(), true)){
+                 PrintWriter serverOut = new PrintWriter(server.getOutputStream(), true)) {
 
-                serverOut.println(request);
-                System.out.println("request " + request);
+                serverOut.println(comando);
                 String response = serverIn.readLine();
 
                 response = validacaoResp(response);
+                sendHttpResponse(out, "200 OK", response);
 
-                output.println(response);
-                output.flush();
-                output.close();
-                socket.close();
-
+            } catch (IOException e) {
+                sendHttpResponse(out, "500 Internal Server Error", "Erro ao contatar servidor");
             }
-
-
 
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static void sendHttpResponse(OutputStream out, String status, String body) throws IOException {
+        String response = "HTTP/1.0 " + status + "\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + body.length() + "\r\n" +
+                "\r\n" +
+                body;
+        out.write(response.getBytes(StandardCharsets.UTF_8));
+        out.flush();
     }
 }

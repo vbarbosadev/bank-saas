@@ -7,6 +7,7 @@ import objetos.ProcessadorBancario;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -60,11 +61,26 @@ public class ServerInstance {
 
         try (LeaderSocket;
              BufferedReader input = new BufferedReader(new InputStreamReader(LeaderSocket.getInputStream()));
-             PrintWriter output = new PrintWriter(LeaderSocket.getOutputStream(), true)) {
+             OutputStream output = LeaderSocket.getOutputStream()) {
 
             String msg = input.readLine();
+            if (msg == null || !msg.startsWith("GET")) {
+                sendHttpResponse(output, "400 Bad Request", "Formato de requisição inválido");
+                return;
+            }
+
+            String[] parts = msg.split(" ");
+            if (parts.length < 2) {
+                sendHttpResponse(output, "400 Bad Request", "Requisição malformada");
+                return;
+            }
+
+            String comando = parts[1].substring(1); // remove a barra inicial
+
+
+
             if ("PING".equals(msg)) {
-                output.println("PONG");
+                //output.println("PONG");
                 return;
             }
             if ("COMMIT".equals(msg)) {
@@ -109,7 +125,7 @@ public class ServerInstance {
                 bancoLock.readLock().unlock();
             }
 
-            output.println(reply);
+            //output.println(reply);
 
 
         } catch (IOException e) {
@@ -219,6 +235,16 @@ public class ServerInstance {
             bancoLock.writeLock().unlock();
 
         }
+    }
+
+    private static void sendHttpResponse(OutputStream out, String status, String body) throws IOException {
+        String response = "HTTP/1.0 " + status + "\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + body.length() + "\r\n" +
+                "\r\n" +
+                body;
+        out.write(response.getBytes(StandardCharsets.UTF_8));
+        out.flush();
     }
 
 }
