@@ -22,6 +22,7 @@ public class ServerInstance {
     public static final ProcessadorBancario process = new ProcessadorBancario(banco);
     public static final ReentrantReadWriteLock bancoLock = new ReentrantReadWriteLock(); // 🔐 Lock para sincronização
     public static int PORT = 0;
+    public static boolean replayer = false;
 
     public static void main(String[] args) {
         long inicio = System.nanoTime();
@@ -56,6 +57,7 @@ public class ServerInstance {
     }
 
     private static void handleClient(Socket LeaderSocket) {
+
         try (LeaderSocket;
              BufferedReader input = new BufferedReader(new InputStreamReader(LeaderSocket.getInputStream()));
              PrintWriter output = new PrintWriter(LeaderSocket.getOutputStream(), true)) {
@@ -67,18 +69,26 @@ public class ServerInstance {
             }
             if ("COMMIT".equals(msg)) {
                 enviarBancoParaAuxiliar();
+                replayer = false;
                 return;
             }
 
+            if ("ReplayerLog".equals(msg)){
+                replayer = true;
+                return;
+            }
+
+            System.out.println("Replayer Log: " + replayer);
+
             System.out.println("[REQ] Operação recebida de " + LeaderSocket.getInetAddress() + ": " + msg);
-            String reply;
+            String reply = new String();
             long inicioEspera = System.nanoTime(); // 🕒 Início da espera
             bancoLock.readLock().lock(); // 🔒 Acesso de leitura ao banco
             long fimEspera = System.nanoTime(); // 🕒 Fim da espera
-            System.out.printf("[THREAD] Leitura aguardou %.3f ms%n", (fimEspera - inicioEspera) / 1_000_000.0);
-            reply = process.processar(msg);
+            //System.out.printf("[THREAD] Leitura aguardou %.3f ms%n", (fimEspera - inicioEspera) / 1_000_000.0);
             try {
-                if(validacaoResp(reply)){
+                reply = process.processar(msg);
+                if(validacaoResp(reply) && !replayer){
                     try (Socket logSocket = new Socket("localhost", 9000)) {
                         int bloco  = (banco.getBloco());
                         var logOut = new PrintWriter(logSocket.getOutputStream(), true);
@@ -87,6 +97,9 @@ public class ServerInstance {
                         //System.out.println("Log enviado com sucesso para o bloco " + bloco + "!");
 
                     }
+                }
+                if(!replayer){
+                    System.out.println("[LOG] requisição" + msg + "reprocessada!");
                 }
 
             }   catch (IOException e){
@@ -111,7 +124,7 @@ public class ServerInstance {
         long inicioEspera = System.nanoTime(); // 🕒
         bancoLock.writeLock().lock(); // 🔐
         long fimEspera = System.nanoTime(); // 🕒
-        System.out.printf("\n[COMMIT] Escrita aguardou %.3f ms%n\n", (fimEspera - inicioEspera) / 1_000_000.0);
+        //System.out.printf("\n[COMMIT] Escrita aguardou %.3f ms%n\n", (fimEspera - inicioEspera) / 1_000_000.0);
 
         try {
             try (Socket socket = new Socket("localhost", 8000); // Porta do servidor auxiliar

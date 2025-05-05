@@ -33,6 +33,7 @@ public class ReplayerDeLog {
         int i = 0;
         try {
             List<String> linhas = Files.readAllLines(path);
+            enviarRequest("ReplayerLog");
             for (String linha : linhas) {
                 String[] partes = linha.split(";");
                 if (partes.length < 5) continue;
