@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class ServerWAL {
+
     private static final String LOG_PATH01 = "log_bloco1.txt";
     private static final String LOG_PATH02 = "log_bloco2.txt";
     private static final String LOG_PATH03 = "log_bloco3.txt";
@@ -23,15 +24,17 @@ public class ServerWAL {
         int PORT = Integer.parseInt(args[0]);
         int BACKLOG = Integer.parseInt(args[1]);
 
-        var serverSocket = new ServerSocket(PORT, BACKLOG);
-        var executor = Executors.newVirtualThreadPerTaskExecutor();
+        try (var serverSocket = new ServerSocket(PORT, BACKLOG)) {
+            var executor = Executors.newVirtualThreadPerTaskExecutor();
 
-        while (true) {
-            var socket = serverSocket.accept();
-            executor.submit(() -> saveLog(socket));
+            while (true) {
+                var socket = serverSocket.accept();
+                executor.submit(() -> saveLog(socket));
+            }
+        } catch (IOException e) {
+            System.err.println("[Erro] Falha ao iniciar o servidor: " + e.getMessage());
         }
     }
-
 
     private static void saveLog(Socket socket) {
         try (socket) {
@@ -39,11 +42,11 @@ public class ServerWAL {
             String msg = in.readLine();
 
             String[] partes = msg.split(";", 2);
-            String request = partes[1];
             String bloco = partes[0];
+            String request = partes[1];
 
-            if(getComando(request).equals("saldo")){
-                return;
+            if (getComando(request).equals("saldo")) {
+                return; // Se o comando for 'saldo', não faz nada
             }
 
             if (request.equals("COMMIT")) {
@@ -53,32 +56,40 @@ public class ServerWAL {
             }
 
             String logLine = System.currentTimeMillis() + ";" + request + ";PENDENTE" + System.lineSeparator();
-
-            switch (bloco){
-                case "1" -> Files.writeString(Path.of(LOG_PATH01), logLine, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-                case "2" -> Files.writeString(Path.of(LOG_PATH02), logLine, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-                case "3" -> Files.writeString(Path.of(LOG_PATH03), logLine, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-            }
-
+            gravarLogNoBloco(bloco, logLine);
             System.out.println("Log salvo no bloco " + bloco + ": " + logLine);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("[Erro] Erro ao processar o log: " + e.getMessage());
+        }
+    }
+
+    private static void gravarLogNoBloco(String bloco, String logLine) throws IOException {
+        Path path = getPathDoBloco(bloco);
+        if (path != null) {
+            Files.writeString(path, logLine, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        }
+    }
+
+    private static Path getPathDoBloco(String bloco) {
+        switch (bloco) {
+            case "1":
+                return Path.of(LOG_PATH01);
+            case "2":
+                return Path.of(LOG_PATH02);
+            case "3":
+                return Path.of(LOG_PATH03);
+            default:
+                System.err.println("[Erro] Bloco inválido: " + bloco);
+                return null;
         }
     }
 
     private static void marcarComoCommit(String bloco) throws IOException {
-
-        System.err.println("Marcar como COMMIT entrou");
-
-        Path path = switch (bloco){
-            case "1" -> Path.of(LOG_PATH01);
-            case "2" -> Path.of(LOG_PATH02);
-            case "3" -> Path.of(LOG_PATH03);
-            default -> throw new IllegalArgumentException("Bloco inválido");
-        };
-
-        if (!Files.exists(path)) return;
+        Path path = getPathDoBloco(bloco);
+        if (path == null || !Files.exists(path)) {
+            return;
+        }
 
         List<String> linhas = Files.readAllLines(path);
         List<String> atualizadas = linhas.stream()
@@ -86,11 +97,11 @@ public class ServerWAL {
                 .collect(Collectors.toList());
 
         Files.write(path, atualizadas);
+        System.out.println("Log do bloco " + bloco + " atualizado para COMMIT.");
     }
 
     private static String getComando(String msg) {
-        String[] partes = msg.split(";", 2);
-        return partes[0];
+        StringTokenizer tokenizer = new StringTokenizer(msg, ";");
+        return tokenizer.hasMoreTokens() ? tokenizer.nextToken() : "";
     }
-
 }

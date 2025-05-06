@@ -5,10 +5,14 @@ import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class MonitorDeInstancias {
 
     private static List<ListaDeServers> auxiliares;
+    private ScheduledExecutorService scheduler;
 
     public MonitorDeInstancias() {
         ListaDeServers s1 = new ListaDeServers("localhost", 7001);
@@ -21,7 +25,7 @@ public class MonitorDeInstancias {
         auxiliares.add(s3);
     }
 
-    public static void addServer(ListaDeServers server) {
+    public void addServer(ListaDeServers server) {
         auxiliares.add(server);
     }
 
@@ -31,26 +35,15 @@ public class MonitorDeInstancias {
         System.out.println();
     }
 
-    private static void verificarHeartbeats() {
+    private void verificarHeartbeats() {
         for (ListaDeServers servidor : auxiliares) {
-            try (Socket socket = new Socket(servidor.getHost(), servidor.getPorta());
-                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+            boolean isServerActive = verificarServidor(servidor);
 
-                out.println("PING");
-                socket.setSoTimeout(3000); // timeout de 3 segundos
-                String resposta = in.readLine();
-
-                if ("PONG".equals(resposta)) {
-                    if (!servidor.isAtivo()) {
-                        System.out.println("[Monitor] Servidor voltou: " + servidor.getHost() + ":" + servidor.getPorta());
-                    }
-                    servidor.setAtivo(true);
-                } else {
-                    servidor.setAtivo(false);
-                    servidor.setLastPing(false);
-                    System.out.println("[Monitor] Servidor inativo (sem resposta correta): " + servidor.getHost() + ":" + servidor.getPorta());
+            if (isServerActive) {
+                if (!servidor.isAtivo()) {
+                    System.out.println("[Monitor] Servidor voltou: " + servidor.getHost() + ":" + servidor.getPorta());
                 }
+                servidor.setAtivo(true);
 
                 if (!servidor.isLastPing() && servidor.isAtivo()) {
                     servidor.setLastPing(true);
@@ -69,13 +62,55 @@ public class MonitorDeInstancias {
                     }
                 }
 
-            } catch (IOException e) {
+            } else {
                 if (servidor.isAtivo()) {
                     System.out.println("[Monitor] Servidor caiu: " + servidor.getHost() + ":" + servidor.getPorta());
                 }
                 servidor.setAtivo(false);
                 servidor.setLastPing(false);
+                System.out.println("[Monitor] Servidor inativo (sem resposta correta): " + servidor.getHost() + ":" + servidor.getPorta());
             }
+        }
+    }
+
+
+
+    private boolean verificarServidor(ListaDeServers servidor) {
+        try (Socket socket = new Socket(servidor.getHost(), servidor.getPorta());
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+            // Enviando requisição HTTP GET
+            out.println("GET /PiNG HTTP/1.0");
+            out.println("Host: " + servidor.getHost());
+            out.println(); // Linha em branco para sinalizar o fim dos headers
+
+            // Lendo a primeira linha da resposta (status)
+            String statusLine = in.readLine();
+            if (statusLine == null || !statusLine.contains("200")) {
+                return false; // Se não for 200 OK, o servidor não respondeu corretamente
+            }
+
+            // Lê e ignora os headers da resposta
+            String line;
+            while ((line = in.readLine()) != null && !line.isEmpty()) {
+                // Ignora headers
+            }
+
+            // Lê o corpo da resposta, se necessário
+            StringBuilder responseBody = new StringBuilder();
+            while ((line = in.readLine()) != null) {
+                responseBody.append(line);
+            }
+
+            // Verificando se o corpo da resposta é esperado (opcional, dependendo do seu caso)
+            System.out.println("[Monitor] Resposta do servidor: " + responseBody.toString());
+
+            return true;
+
+        } catch (IOException e) {
+            System.err.println("[Monitor] Erro ao verificar servidor: " + e.getMessage());
+            return false;
         }
     }
 

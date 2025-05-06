@@ -18,59 +18,83 @@ public class ReplayerDeLog {
     public static void reproduzir(int porta, int b) {
         bloco = b;
         portaServidor = porta;
-        String caminho = getCaminhoLog();
-        if (caminho == null) {
-            System.err.println("Bloco inválido: " + bloco);
+
+        String caminhoLog = getCaminhoLog();
+        if (caminhoLog == null) {
+            System.err.println("[Erro] Bloco inválido: " + bloco);
             return;
         }
 
-        Path path = Path.of(caminho);
+        Path path = Path.of(caminhoLog);
         if (!Files.exists(path)) {
-            System.out.println("Log não encontrado: " + caminho);
+            System.out.println("[Aviso] Log não encontrado: " + caminhoLog);
             return;
         }
 
-        int i = 0;
+        int numeroDeOperacoes = 0;
         try {
             List<String> linhas = Files.readAllLines(path);
-            enviarRequest("ReplayerLog");
+            enviarRequestHttp("ReplayerLog");
+
             for (String linha : linhas) {
                 String[] partes = linha.split(";");
                 if (partes.length < 5) continue;
 
                 String status = partes[4];
-                if (!status.equals("PENDENTE")) continue;
+                if (!"PENDENTE".equals(status)) continue;
 
                 String comando = partes[1];
                 String conta = partes[2];
                 String valor = partes[3];
 
                 String msg = comando + ";" + conta + ";" + valor;
-                enviarRequest(msg);
-                i++;
+                enviarRequestHttp(msg);
+                numeroDeOperacoes++;
             }
 
-            System.err.println("Reexecução do log do bloco " + bloco + " concluída.");
-            WALUtils.marcarTodosComoCommit((bloco));
+            System.err.println("[Info] Reexecução do log do bloco " + bloco + " concluída.");
+            WALUtils.marcarTodosComoCommit(bloco);
 
-            enviarRequest("COMMIT");
+            enviarRequestHttp("COMMIT");
 
         } catch (IOException e) {
-            System.err.println("Erro ao ler log: " + e.getMessage());
+            System.err.println("[Erro] Falha ao ler o log: " + e.getMessage());
+        }
+
+        if (numeroDeOperacoes == 0) {
+            System.out.println("[Aviso] Nenhuma operação PENDENTE encontrada no log.");
         }
     }
 
-    private static void enviarRequest(String msg) {
+    private static void enviarRequestHttp(String msg) {
         try (Socket socket = new Socket("localhost", portaServidor);
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             OutputStream out = socket.getOutputStream();
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            out.println(msg);
-            String resposta = in.readLine();
-            System.out.println("Reenviado: " + msg);
-            System.out.println("Resposta: " + resposta);
+            // Criando uma requisição HTTP POST simples
+            String httpRequest =
+                    "POST /operacao HTTP/1.1\r\n" +
+                            "Host: localhost\r\n" +
+                            "Content-Type: text/plain\r\n" +
+                            "Content-Length: " + msg.length() + "\r\n" +
+                            "\r\n" +
+                            msg;
+
+            out.write(httpRequest.getBytes());
+            out.flush();
+
+            // Lendo a resposta HTTP
+            String linha;
+            StringBuilder resposta = new StringBuilder();
+            while ((linha = in.readLine()) != null && !linha.isEmpty()) {
+                resposta.append(linha).append("\n");
+            }
+
+            System.out.println("[Info] Reenviado via HTTP: " + msg);
+            System.out.println("[Info] Resposta HTTP: \n" + resposta);
+
         } catch (IOException e) {
-            System.err.println("Erro ao reenviar operação para servidor na porta " + portaServidor + ": " + e.getMessage());
+            System.err.println("[Erro] Falha ao reenviar operação via HTTP para servidor na porta " + portaServidor + ": " + e.getMessage());
         }
     }
 
